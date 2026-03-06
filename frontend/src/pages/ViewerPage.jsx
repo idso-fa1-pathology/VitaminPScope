@@ -4,6 +4,7 @@ import SlideList from "../components/SlideList";
 import SlideInfo from "../components/SlideInfo";
 import ChannelPanel from "../components/ChannelPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
+import VivViewer from "../viewers/VivViewer";
 
 function ViewerPage() {
   const [slides, setSlides] = useState([]);
@@ -25,14 +26,12 @@ function ViewerPage() {
         setSlideInfo(data);
 
         if (data.type === "ome-tiff" && data.channels?.length) {
-          const defaults = data.channels.slice(0, Math.min(3, data.channels.length)).map((ch, i) => {
-            const colors = ["#00ff00", "#ff9900", "#ff00ff"];
-            return {
-              index: ch.index,
-              color: colors[i] || "#ffffff",
-              opacity: 0.7,
-            };
-          });
+          const colors = ["#00ff00", "#ff9900", "#ff00ff", "#00ffff", "#ffffff"];
+          const defaults = data.channels.slice(0, Math.min(3, data.channels.length)).map((ch, i) => ({
+            index: ch.index,
+            color: colors[i] || "#ffffff",
+            opacity: 0.7,
+          }));
           setSelectedChannels(defaults);
         } else {
           setSelectedChannels([]);
@@ -92,6 +91,12 @@ function ViewerPage() {
           >
             Select a slide from the manager to view it.
           </div>
+        ) : isOme ? (
+          <VivViewer
+            slide={selectedSlide}
+            slideInfo={slideInfo}
+            selectedChannels={selectedChannels}
+          />
         ) : (
           <OpenSeadragonViewer
             slide={selectedSlide}
