@@ -26,12 +26,23 @@ function ViewerPage() {
         setSlideInfo(data);
 
         if (data.type === "ome-tiff" && data.channels?.length) {
-          const colors = ["#00ff00", "#ff9900", "#ff00ff", "#00ffff", "#ffffff"];
-          const defaults = data.channels.slice(0, Math.min(3, data.channels.length)).map((ch, i) => ({
-            index: ch.index,
-            color: colors[i] || "#ffffff",
-            opacity: 0.7,
-          }));
+          const defaultPalette = [
+            "#0000ff",
+            "#00ff00",
+            "#ff0000",
+            "#ff00ff",
+            "#ffff00",
+            "#00ffff",
+          ];
+
+          const defaults = data.channels
+            .slice(0, Math.min(3, data.channels.length))
+            .map((ch, i) => ({
+              index: ch.index,
+              color: defaultPalette[i] || "#ffffff",
+              opacity: 1,
+            }));
+
           setSelectedChannels(defaults);
         } else {
           setSelectedChannels([]);
@@ -61,13 +72,13 @@ function ViewerPage() {
 
         <SlideInfo slideInfo={slideInfo} />
 
-        {isOme && (
+        {isOme && slideInfo?.channels?.length ? (
           <ChannelPanel
             channels={slideInfo.channels}
             selectedChannels={selectedChannels}
             onChange={setSelectedChannels}
           />
-        )}
+        ) : null}
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>

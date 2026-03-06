@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.DS_Store
+data
+logs
+uploads
+*.svs
+*.tif
+*.tiff
+*.ndpi
+*.ome.tif
+*.ome.tiff

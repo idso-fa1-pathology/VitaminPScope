@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.DS_Store
+logs
+models
+checkpoints
+*.pt
+*.pth
+*.onnx
+*.ckpt

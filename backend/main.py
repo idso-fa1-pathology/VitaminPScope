@@ -183,7 +183,7 @@ def get_thumbnail(
 
         if slide_type == "ome-tiff" and color:
             image_binary = tint_grayscale_tile(image_binary, color=color)
-            mime_type = "image/jpeg"
+            mime_type = "image/png"
 
         return Response(content=image_binary, media_type=mime_type)
 
@@ -212,7 +212,7 @@ def get_tile(
 
         if slide_type == "ome-tiff" and color:
             tile_binary = tint_grayscale_tile(tile_binary, color=color)
-            mime_type = "image/jpeg"
+            mime_type = "image/png"
 
         return Response(content=tile_binary, media_type=mime_type)
 

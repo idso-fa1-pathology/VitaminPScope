@@ -1,22 +1,27 @@
 {
-    "name": "polyscope-frontend",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-      "dev": "vite",
-      "build": "vite build"
-    },
-    "dependencies": {
-      "@deck.gl/core": "9.1.15",
-      "@deck.gl/layers": "9.1.15",
-      "@hms-dbmi/viv": "0.19.0",
-      "openseadragon": "^6.0.1",
-      "react": "^18.2.0",
-      "react-dom": "^18.2.0"
-    },
-    "devDependencies": {
-      "@vitejs/plugin-react": "^4.2.1",
-      "vite": "^5.2.0"
-    }
+  "name": "polyscope-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@deck.gl/core": "9.1.15",
+    "@deck.gl/layers": "9.1.15",
+    "@deck.gl/react": "9.1.15",
+    "@deck.gl/geo-layers": "9.1.15",
+    "@deck.gl/mesh-layers": "9.1.15",
+    "@deck.gl/extensions": "9.1.15",
+    "@deck.gl/widgets": "9.1.15",
+    "@hms-dbmi/viv": "0.19.0",
+    "openseadragon": "^6.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.2.0"
   }
+}
