@@ -1,5 +1,0 @@
-FROM squidfunk/mkdocs-material:latest
-
-# RUN pip install --no-cache-dir mkdocs-git-committers-plugin-2
-
-CMD ["serve", "--dev-addr=0.0.0.0:8000", "--livereload"]

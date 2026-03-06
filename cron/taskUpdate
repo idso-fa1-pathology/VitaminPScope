@@ -1,2 +1,0 @@
-* * * * * /var/www/executeSupervisor.sh
-* * * * * ( sleep 30; /var/www/executeSupervisor.sh )

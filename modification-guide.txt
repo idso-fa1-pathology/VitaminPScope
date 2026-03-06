@@ -1,1 +1,0 @@
-For polyzoomer modification : pz_scripts/polyzoomers/template two files js can be modify : polyzoomerPlugin.js and sgbeal-colorpicker-20070712.jquery.js ex: color added from 16 to 32
