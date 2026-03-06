@@ -4,7 +4,6 @@ import { OrthographicView } from "@deck.gl/core";
 import {
   loadOmeTiff,
   MultiscaleImageLayer,
-  getDefaultInitialViewState,
   getChannelStats,
 } from "@hms-dbmi/viv";
 
@@ -25,6 +24,24 @@ function fallbackContrastLimits(dtype) {
   if (dtype === "uint16") return [0, 65535];
   if (dtype === "uint8") return [0, 255];
   return [0, 1];
+}
+
+function getManualInitialViewState(width, height, imageWidth, imageHeight) {
+  const safeWidth = Math.max(width || 1, 1);
+  const safeHeight = Math.max(height || 1, 1);
+  const safeImageWidth = Math.max(imageWidth || 1, 1);
+  const safeImageHeight = Math.max(imageHeight || 1, 1);
+
+  const zoomX = Math.log2(safeWidth / safeImageWidth);
+  const zoomY = Math.log2(safeHeight / safeImageHeight);
+  const zoom = Math.min(zoomX, zoomY);
+
+  return {
+    target: [safeImageWidth / 2, safeImageHeight / 2, 0],
+    zoom,
+    minZoom: zoom - 4,
+    maxZoom: zoom + 8,
+  };
 }
 
 function VivViewer({ slide, slideInfo, selectedChannels }) {
@@ -49,59 +66,81 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
       try {
         setLoading(true);
         setError("");
-    
+        setLoader(null);
+        setViewState(null);
+
         const loaded = await loadOmeTiff(sourceUrl);
         if (cancelled) return;
-    
-        const normalizedLoader = Array.isArray(loaded) ? loaded : [loaded];
-        const baseLoader = normalizedLoader.find((item) => item && item.shape);
-    
+
+        console.log("Viv loaded object:", loaded);
+        console.log("Viv loaded data:", loaded?.data);
+        console.log("Viv loaded metadata:", loaded?.metadata);
+
+        const loaderArray = loaded?.data;
+
+        if (!Array.isArray(loaderArray) || !loaderArray.length) {
+          throw new Error("OME-TIFF loaded, but Viv returned no image data.");
+        }
+
+        const baseLoader =
+          loaderArray.find((item) => item && item.shape) || loaderArray[0];
+
         if (!baseLoader) {
-          console.error("Invalid Viv loader:", loaded);
-          throw new Error("OME-TIFF loaded, but no raster source with shape was found.");
+          throw new Error("OME-TIFF loaded, but no usable loader was found.");
         }
-    
-        if (typeof baseLoader.getRaster !== "function") {
-          throw new Error("Viv loader does not support getRaster().");
-        }
-    
-        setLoader(normalizedLoader);
-    
+
+        setLoader(loaderArray);
+
         const width = containerRef.current?.clientWidth || 1200;
         const height = containerRef.current?.clientHeight || 800;
-        const initial = getDefaultInitialViewState(baseLoader, width, height);
-    
+        const imageWidth = slideInfo.metadata?.sizeX || 1;
+        const imageHeight = slideInfo.metadata?.sizeY || 1;
+
+        const initial = getManualInitialViewState(
+          width,
+          height,
+          imageWidth,
+          imageHeight
+        );
+
         if (!cancelled) {
           setViewState(initial);
         }
-    
+
         const channels = slideInfo.channels || [];
         const dtype = slideInfo.metadata?.dtype;
         const nextContrast = {};
-    
-        for (const ch of channels) {
-          try {
-            const raster = await baseLoader.getRaster({
-              selection: { c: ch.index, z: 0, t: 0 },
-            });
-    
-            const stats = getChannelStats(raster.data);
-            let limits = stats?.contrastLimits || fallbackContrastLimits(dtype);
-    
-            if (
-              !Array.isArray(limits) ||
-              limits.length !== 2 ||
-              limits[0] === limits[1]
-            ) {
-              limits = stats?.domain || fallbackContrastLimits(dtype);
+
+        if (typeof baseLoader.getRaster === "function") {
+          for (const ch of channels) {
+            try {
+              const raster = await baseLoader.getRaster({
+                selection: { c: ch.index, z: 0, t: 0 },
+              });
+
+              const stats = getChannelStats(raster.data);
+              let limits = stats?.contrastLimits || fallbackContrastLimits(dtype);
+
+              if (
+                !Array.isArray(limits) ||
+                limits.length !== 2 ||
+                limits[0] === limits[1]
+              ) {
+                limits = stats?.domain || fallbackContrastLimits(dtype);
+              }
+
+              nextContrast[ch.index] = limits;
+            } catch (e) {
+              console.warn(`Failed to get stats for channel ${ch.index}`, e);
+              nextContrast[ch.index] = fallbackContrastLimits(dtype);
             }
-    
-            nextContrast[ch.index] = limits;
-          } catch (e) {
+          }
+        } else {
+          for (const ch of channels) {
             nextContrast[ch.index] = fallbackContrastLimits(dtype);
           }
         }
-    
+
         if (!cancelled) {
           setContrastByChannel(nextContrast);
         }
@@ -128,6 +167,7 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
 
   const layer = useMemo(() => {
     if (!loader || !slideInfo) return null;
+    if (!Array.isArray(loader) || !loader.length) return null;
     if (!activeChannels.length) return null;
 
     const selections = activeChannels.map((ch) => ({
