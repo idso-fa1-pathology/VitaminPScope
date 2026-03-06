@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# 1:	pending -> 
+# 2:	upload -> uploading -> uploaded -> putToOwnFolder -> 
+# 3:	estimateSize -> feedbackToGui ->
+# 4: 	readyForQueue -> inQueue ->				
+# 5:    processing ->
+# 6:    finished -> emailSent -> feedbackToGui
+
+jobs = `cat /var/www/jobs.log`
+
+pendingJobs = `grep `
+uploadingJobs = `grep `
+preQueuedJobs = `grep `
+queuedJobs = `grep `
+processingJobs = `grep `
+finishedJobs = `grep `

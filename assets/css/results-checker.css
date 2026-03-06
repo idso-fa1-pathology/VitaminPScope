@@ -1,0 +1,138 @@
+/**
+ * Results Checker Styles
+ * Additional styles for the results checker functionality
+ */
+
+/* Results button states */
+.btn.results-checking {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+
+.btn.results-unavailable {
+    background: var(--bg-secondary) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border-color) !important;
+    opacity: 0.8;
+    position: relative;
+}
+
+.btn.results-unavailable::before {
+    display: none; /* Remove the shine effect */
+}
+
+.btn.results-unavailable:hover {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-hover) !important;
+    cursor: help;
+    transform: none; /* Remove the lift effect */
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Override any conflicting header button styles */
+.header-content .btn.results-unavailable {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(10px);
+}
+
+.header-content .btn.results-unavailable:hover {
+    background: rgba(255, 255, 255, 0.4) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    cursor: help;
+    transform: none !important;
+}
+
+/* Pulse animations for highlighting */
+.highlight-pulse {
+    animation: highlightPulse 1s ease-in-out 3;
+    border: 2px solid transparent;
+}
+
+@keyframes highlightPulse {
+    0% {
+        border-color: transparent;
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+    }
+    50% {
+        border-color: #007bff;
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0.1);
+    }
+    100% {
+        border-color: transparent;
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+
+.btn-pulse {
+    animation: btnPulse 0.5s ease-in-out 6;
+}
+
+@keyframes btnPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Enhanced notification styles for results notifications */
+.notification.notification-info.results-notification {
+    border-left: 4px solid var(--primary-color);
+}
+
+.notification.notification-info.results-notification .notification-title {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.notification.notification-info.results-notification .notification-icon {
+    color: var(--primary-color);
+}
+
+/* Custom results notification styling */
+.results-notification-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.results-notification-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.results-notification-actions .btn {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Loading state for results button */
+.results-checking::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

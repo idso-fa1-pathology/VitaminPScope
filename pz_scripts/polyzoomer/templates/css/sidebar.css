@@ -1,0 +1,296 @@
+/*
+   Sidebar Styles - Left panel with tools and information
+*/
+
+/* Professional Container Layout */
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  padding-top: 60px;
+  background-color: #ffffff;
+  position: relative;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle {
+  position: absolute;
+  left: 380px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--accent-color);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 60px;
+  border-radius: 0 15px 15px 0;
+  cursor: pointer;
+  z-index: 1001;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-toggle.collapsed {
+  left: 0;
+}
+
+.sidebar-toggle:hover {
+  background: #3367d6;
+}
+
+/* Professional Sidebar */
+.sidebar {
+  width: 380px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow-light);
+  transition: var(--transition-smooth);
+  overflow-y: auto;
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+.sidebar-header {
+  background: white;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sidebar-header i {
+  color: var(--accent-color);
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+/* Professional Sidebar Sections */
+.section {
+  border-bottom: 1px solid var(--border-color);
+  overflow: visible;
+  position: relative;
+}
+
+.section-header {
+  background: var(--sidebar-bg);
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: var(--transition-smooth);
+  border-left: 3px solid transparent;
+}
+
+.section-header:hover {
+  background: #e9ecef;
+  border-left-color: var(--accent-color);
+}
+
+.section-header.active {
+  background: var(--accent-color);
+  color: white;
+}
+
+.section-header span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-header span i {
+  color: var(--accent-color);
+  font-size: 0.9rem;
+}
+
+.section-header.active span i {
+  color: white;
+}
+
+.section-header i:last-child {
+  transition: transform 0.3s ease;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.section-header.active i:last-child {
+  color: white;
+  transform: rotate(180deg);
+}
+
+.section-content {
+  background: #fafbfc;
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.section-content.expanded {
+  max-height: none;
+  padding: 20px;
+  overflow: visible;
+}
+
+/* Special handling for annotations section to allow proper scrolling */
+.section-content.expanded:has(.annotation-summary) {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Alternative approach if :has() selector isn't supported */
+.section:has(.annotation-summary) .section-content.expanded {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Ensure annotation items have proper spacing and don't overlap */
+.annotation-summary {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 80px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-light);
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix for annotation actions to stay within bounds */
+.annotation-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  justify-content: flex-start;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure delete buttons and other controls don't get clipped */
+.annotation-actions button,
+.annotation-actions .action-btn {
+  position: relative;
+  z-index: 3;
+  white-space: nowrap;
+  min-width: auto;
+  flex-shrink: 0;
+}
+
+/* Info Items in Sidebar */
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border-left: 3px solid #4a90e2;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.info-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+  border-left-color: #357abd;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: #4a5568;
+  min-width: 120px;
+  margin-right: 20px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-item span {
+  color: #1a202c;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Optional: Add alternating colors */
+.info-item:nth-child(even) {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-left-color: #48bb78;
+}
+
+.info-item:nth-child(even):hover {
+  border-left-color: #38a169;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.15);
+}
+
+/* Control Items */
+.control-item {
+  margin-bottom: 12px;
+}
+
+.control-item:last-child {
+  margin-bottom: 0;
+}
+
+.control-item label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.control-item label:hover {
+  color: var(--accent-color);
+}
+
+.control-item input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
+}

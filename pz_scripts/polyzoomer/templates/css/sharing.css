@@ -1,0 +1,315 @@
+/*
+   Sharing Modal Styles
+   Add this to your CSS imports or include separately
+*/
+
+/* Share Modal Overlay */
+.share-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1002;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-modal.show {
+    display: flex !important;
+}
+
+/* Share Modal Content */
+.share-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-color);
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Share Header */
+.share-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface-color);
+    border-radius: 8px 8px 0 0;
+}
+
+.share-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-header h3 i {
+    color: var(--accent-color);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+}
+
+.close-btn:hover {
+    color: var(--text-primary);
+    background: var(--border-color);
+}
+
+/* Share Body */
+.share-body {
+    padding: 20px;
+}
+
+.share-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* URL Container */
+.url-container {
+    display: flex;
+    margin: 10px 0 20px 0;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+}
+
+.url-container input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.url-container input:focus {
+    border-color: var(--accent-color);
+    background: white;
+}
+
+.copy-btn {
+    padding: 12px 16px;
+    background: var(--accent-color);
+    color: white;
+    border: 1px solid var(--accent-color);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: #3367d6;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-light);
+}
+
+.copy-btn:active {
+    transform: translateY(0);
+}
+
+.copy-btn.copied {
+    background: #22c55e;
+    border-color: #22c55e;
+}
+
+.copy-btn.copied::after {
+    content: 'Copied!';
+    position: absolute;
+    top: -35px;
+    right: 0;
+    background: #22c55e;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Share Options */
+.share-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.share-option-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+    text-decoration: none;
+}
+
+.share-option-btn:hover {
+    background: var(--surface-color);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-light);
+}
+
+.share-option-btn i {
+    font-size: 16px;
+}
+
+/* Share Option Specific Colors */
+.share-option-btn.email:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+}
+
+.share-option-btn.twitter:hover {
+    background: #1da1f2;
+    border-color: #1da1f2;
+    color: white;
+}
+
+.share-option-btn.linkedin:hover {
+    background: #0077b5;
+    border-color: #0077b5;
+    color: white;
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--accent-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-medium);
+    z-index: 1003;
+    animation: slideInRight 0.3s ease-out;
+    font-weight: 500;
+}
+
+.notification.success {
+    background: #22c55e;
+}
+
+.notification.error {
+    background: #dc2626;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .share-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .share-header {
+        padding: 16px;
+    }
+    
+    .share-body {
+        padding: 16px;
+    }
+    
+    .url-container {
+        flex-direction: column;
+    }
+    
+    .url-container input {
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+    }
+    
+    .copy-btn {
+        border-top: none;
+        justify-content: center;
+    }
+    
+    .share-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .share-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .url-container input {
+        font-size: 12px;
+        padding: 10px 14px;
+    }
+    
+    .copy-btn {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    .share-option-btn {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}

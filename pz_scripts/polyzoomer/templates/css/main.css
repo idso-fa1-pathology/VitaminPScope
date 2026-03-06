@@ -1,0 +1,276 @@
+/*
+   Main CSS - Imports all stylesheets in correct order
+   Author: Sebastian Schmittner
+   Updated: Medical/Scientific Application Layout
+*/
+
+/* Base styles first - variables, reset, typography */
+@import url('base.css');
+
+/* Component styles */
+@import url('header.css');
+@import url('sidebar.css');
+@import url('viewer.css');
+@import url('image-controls.css');
+@import url('cell-segmentation.css');
+/* Vendor/External libraries */
+@import url('jquery-ui.min.css');
+@import url('jquery-ui.structure.min.css');
+@import url('jquery-ui.theme.min.css');
+@import url('navigation.css');        /* Add this line */
+@import url('screenshot.css');        /* Add this line */
+
+/* Annotations and remaining styles from original style.css */
+.annotation-summary:empty::before {
+  content: "No annotations available";
+  color: var(--text-secondary);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+}
+
+.annotation-summary:not(:empty) {
+  border-left: 4px solid var(--accent-color);
+}
+
+/* Annotations in Sidebar */
+.annotation-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 80px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-light);
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.annotation-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Modern Button Styling */
+#downloadAnnotationsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-color);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition-smooth);
+  box-shadow: var(--shadow-light);
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+#downloadAnnotationsBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+#downloadAnnotationsBtn:hover {
+  background: #3367d6;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+#downloadAnnotationsBtn:hover::before {
+  left: 100%;
+}
+
+#downloadAnnotationsBtn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+#downloadAnnotationsBtn i {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+#downloadAnnotationsBtn:hover i {
+  transform: scale(1.1);
+}
+
+/* Export dropdown styles */
+/* Export dropdown styles */
+.export-btn-container {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow-medium);
+  min-width: 160px;
+  z-index: 1001;
+  display: none;
+  margin-top: 2px;
+}
+
+.export-dropdown.show,
+.export-dropdown[style*="block"] {
+  display: block !important;
+}
+
+.export-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-smooth);
+  border-bottom: 1px solid #f0f0f0;
+  color: #333; /* Add this line for text color */
+  background: white;
+}
+
+.export-option:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.export-option:last-child {
+  border-bottom: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.export-option:hover {
+  background: var(--accent-color);
+  color: white;
+}
+
+.export-option i {
+  color: inherit;
+  width: 16px;
+  text-align: center;
+}
+
+.export-arrow {
+  margin-left: 4px;
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sidebar-toggle {
+    left: 320px;
+  }
+  
+  .sidebar {
+    width: 320px;
+  }
+  
+  .sidebar-toggle.collapsed {
+    left: 0;
+  }
+  
+  .viewer-area.expanded {
+    margin-left: -320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 10px 15px;
+  }
+  
+  .app-title {
+    font-size: 1.5rem;
+  }
+  
+  .slide-info {
+    display: none;
+  }
+  
+  .sidebar {
+    width: 100%;
+    position: absolute;
+    z-index: 1000;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 100%;
+  }
+  
+  .sidebar-toggle {
+    left: 0;
+  }
+  
+  .sidebar-toggle.collapsed {
+    left: 0;
+  }
+  
+  .header-btn {
+    padding: 6px 8px;
+    min-width: 36px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .viewer-area.expanded {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 1.3rem;
+  }
+  
+  .header-controls {
+    gap: 4px;
+  }
+  
+  .header-btn {
+    padding: 4px 6px;
+    min-width: 32px;
+    height: 28px;
+  }
+  
+  .sidebar-header {
+    padding: 15px;
+  }
+  
+  .section-header {
+    padding: 12px 15px;
+  }
+  
+  .section-content.expanded {
+    padding: 12px 15px;
+  }
+}

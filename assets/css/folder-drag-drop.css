@@ -1,0 +1,18 @@
+.drag-over-folder {
+    background-color: var(--primary-color) !important;
+    opacity: 0.8;
+    border: 2px dashed white !important;
+  }
+  
+  .dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+  }
+  
+  .file-item[draggable="true"] {
+    cursor: move;
+  }
+  
+  .file-item[data-type="directory"]:hover {
+    background-color: var(--hover-color);
+  }

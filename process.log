@@ -1,0 +1,279 @@
+[2025-06-20 05:02:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_EE29FFA5-D38C-414B-8E8A-3AD13E680E51_1750392152/Path000008_202506200502
+[2025-06-20 05:02:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:02:41] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_50D5088D-4B62-4A58-940D-BFBAA00BF782_1750392161/Path000009_202506200502
+[2025-06-20 05:02:41] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:02:50] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_D00E88E1-BB86-4A3F-BCE4-85B07F410E7A_1750392170/Path000010_202506200502
+[2025-06-20 05:02:50] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:11:01] ULTRA-OPT: Available RAM: 245.85 GB
+[2025-06-20 05:11:01] ULTRA-OPT: CPU Cores: 16
+[2025-06-20 05:11:01] ULTRA-OPT: Creating RAM disk of size: 11G
+[2025-06-20 05:11:01] ULTRA-OPT: RAM disk mounted: sudo mount -t tmpfs -o size=11G,noatime,nodiratime tmpfs /dev/shm/polyscope_ultra_C5A04B1B-03C1-44DE-BDB3-BB4A126EF699
+[2025-06-20 05:11:01] ULTRA-OPT: File size: 3.96 MB
+[2025-06-20 05:11:01] ULTRA-OPT: Selected processing location: RAM_DISK
+[2025-06-20 05:11:02] ULTRA-OPT: Processing path: /dev/shm/polyscope_ultra_C5A04B1B-03C1-44DE-BDB3-BB4A126EF699/Path000011_202506200511
+[2025-06-20 05:11:02] ULTRA-OPT: Processing scripts copied in parallel
+[2025-06-20 05:13:32] ULTRA-OPT: Available RAM: 245.88 GB
+[2025-06-20 05:13:32] ULTRA-OPT: CPU Cores: 16
+[2025-06-20 05:13:32] ULTRA-OPT: Creating RAM disk of size: 11G
+[2025-06-20 05:13:32] ULTRA-OPT: RAM disk mounted: sudo mount -t tmpfs -o size=11G,noatime,nodiratime tmpfs /dev/shm/polyscope_ultra_3084C9C6-7C3B-4172-AE26-A1464ED3C69A
+[2025-06-20 05:13:32] ULTRA-OPT: File size: 112.57 MB
+[2025-06-20 05:13:32] ULTRA-OPT: Selected processing location: RAM_DISK
+[2025-06-20 05:13:32] ULTRA-OPT: Processing path: /dev/shm/polyscope_ultra_3084C9C6-7C3B-4172-AE26-A1464ED3C69A/Path000012_202506200513
+[2025-06-20 05:13:32] Copying to processing location failed: /var/www/uploads/37145201_MS004544S1.png -> /dev/shm/polyscope_ultra_3084C9C6-7C3B-4172-AE26-A1464ED3C69A/Path000012_202506200513/MS004544S1.png
+[2025-06-20 05:21:31] ULTRA-OPT: Available RAM: 245.79 GB
+[2025-06-20 05:21:31] ULTRA-OPT: CPU Cores: 16
+[2025-06-20 05:21:31] ULTRA-OPT: Creating RAM disk of size: 11G
+[2025-06-20 05:21:31] ULTRA-OPT: RAM disk mounted: sudo mount -t tmpfs -o size=11G,noatime,nodiratime tmpfs /dev/shm/polyscope_ultra_11D2A232-9486-4D73-9D29-BE4BB41542BA
+[2025-06-20 05:21:31] ULTRA-OPT: File size: 12.36 KB
+[2025-06-20 05:21:31] ULTRA-OPT: Selected processing location: RAM_DISK
+[2025-06-20 05:21:31] ULTRA-OPT: Processing path: /dev/shm/polyscope_ultra_11D2A232-9486-4D73-9D29-BE4BB41542BA/Path000013_202506200521
+[2025-06-20 05:21:31] Copying to processing location failed: /var/www/uploads/01347805_images.jpg -> /dev/shm/polyscope_ultra_11D2A232-9486-4D73-9D29-BE4BB41542BA/Path000013_202506200521/images.jpg
+[2025-06-20 05:26:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_C53741F8-0996-4B2A-91EB-BE778687C6AB_1750393561/Path000014_202506200526
+[2025-06-20 05:26:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:29:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_08D037F2-7F11-4669-B5EA-ACF5A10FE52C_1750393772/Path000015_202506200529
+[2025-06-20 05:29:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:34:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_D77CCAB2-DD0D-4918-B298-BC009C207E9A_1750394072/Path000016_202506200534
+[2025-06-20 05:34:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 05:58:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_35449272-C2F7-44C9-9155-89DCBFB15DC8_1750395481/Path000017_202506200558
+[2025-06-20 05:58:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 06:00:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_BA86EDE5-348D-4292-8CB4-5F3CA2636132_1750395632/Path000018_202506200600
+[2025-06-20 06:00:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 14:59:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5CF02FA6-6176-4D3C-B268-F17C8A0481B7_1750427942/Path000019_202506201459
+[2025-06-20 14:59:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 15:05:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_8D295B00-1732-4D0F-8EB7-26F52D60282D_1750428332/Path000020_202506201505
+[2025-06-20 15:05:33] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 15:20:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_350A546E-EDAF-4E01-AE88-733C6F52F51D_1750429232/Path000021_202506201520
+[2025-06-20 15:20:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_335930EF-6487-443F-B739-80EA317971BD_1750448852/Path000022_202506202047
+[2025-06-20 20:47:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_335930EF-6487-443F-B739-80EA317971BD_1750448852/Path000023_202506202047
+[2025-06-20 20:47:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:32] Copying to local failed: /var/www/uploads/01314509_Adenoid_cystic_Carcinoma_image_1.jpg -> /tmp/polyscope_processing_335930EF-6487-443F-B739-80EA317971BD_1750448852/Path000023_202506202047/Adenoid_cystic_Carcinoma_image_1.jpg
+[2025-06-20 20:47:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_266DA987-C32F-4C18-9C49-CD41F282E834_1750448852/Path000024_202506202047
+[2025-06-20 20:47:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:42] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_266DA987-C32F-4C18-9C49-CD41F282E834_1750448862/Path000025_202506202047
+[2025-06-20 20:47:42] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:42] Copying to local failed: /var/www/uploads/94669971_Adenoid_cystic_Carcinoma_image_1.jpg -> /tmp/polyscope_processing_266DA987-C32F-4C18-9C49-CD41F282E834_1750448862/Path000025_202506202047/Adenoid_cystic_Carcinoma_image_1.jpg
+[2025-06-20 20:47:42] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A7FECB6C-8568-45BD-915D-D0798CEED9A3_1750448862/Path000026_202506202047
+[2025-06-20 20:47:42] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:43] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A7FECB6C-8568-45BD-915D-D0798CEED9A3_1750448863/Path000027_202506202047
+[2025-06-20 20:47:43] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-20 20:47:43] Copying to local failed: /var/www/uploads/11551161_Adenoid_cystic_Carcinoma_image_1.jpg -> /tmp/polyscope_processing_A7FECB6C-8568-45BD-915D-D0798CEED9A3_1750448863/Path000027_202506202047/Adenoid_cystic_Carcinoma_image_1.jpg
+[2025-06-20 20:48:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_503D8404-9754-45A6-8FC5-B0F36BAF82AA_1750448881/Path000028_202506202048
+[2025-06-20 20:48:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-21 17:51:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_47B99E58-DBDC-4013-A740-58A734A7CF1C_1750524662/Path000029_202506211751
+[2025-06-21 17:51:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 18:41:33] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_EA377537-2057-44AC-92E4-5278E71CB8BE_1750700493/Path000030_202506231841
+[2025-06-23 18:41:33] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000030_202506231841
+[2025-06-23 18:41:33] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 18:46:03] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_D7E2D255-4961-4F44-9F6D-E77E118AA7E4_1750700763/Path000031_202506231846
+[2025-06-23 18:46:03] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000031_202506231846
+[2025-06-23 18:46:03] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 18:48:02] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_A059985C-5BEF-434E-82A0-52DE670A2520_1750700882/Path000032_202506231848
+[2025-06-23 18:48:02] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000032_202506231848
+[2025-06-23 18:48:02] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 18:48:32] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_80B52F98-E269-482E-8FB0-CC821071A5B7_1750700912/Path000033_202506231848
+[2025-06-23 18:48:32] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000033_202506231848
+[2025-06-23 18:48:32] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 18:54:02] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_0507DC72-8FE4-4D89-A580-73E2326B877D_1750701242/Path000034_202506231854
+[2025-06-23 18:54:02] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000034_202506231854
+[2025-06-23 18:54:02] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:04:32] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_E974223B-2C63-4B84-8CA7-AD31DAD8E1DD_1750701872/Path000035_202506231904
+[2025-06-23 19:04:32] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000035_202506231904
+[2025-06-23 19:04:32] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:18:33] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_7CA03E11-786B-47E0-8DF6-FF36F700DEA5_1750702713/Path000036_202506231918
+[2025-06-23 19:18:33] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000036_202506231918
+[2025-06-23 19:18:33] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:18:33] Copying to local failed: /var/www/uploads/77523934_Adenoid_cystic_Carcinoma_image_1.jpg -> /tmp/polyscope_processing_7CA03E11-786B-47E0-8DF6-FF36F700DEA5_1750702713/Path000036_202506231918/Adenoid_cystic_Carcinoma_image_1.jpg
+[2025-06-23 19:27:03] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_C647A455-4AD8-4185-B123-C54DCEB2D7C8_1750703223/Path000037_202506231927
+[2025-06-23 19:27:03] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000037_202506231927
+[2025-06-23 19:27:03] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:29:03] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_82C714FF-320E-4B4C-B8C1-C262644F6008_1750703343/Path000038_202506231929
+[2025-06-23 19:29:03] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000038_202506231929
+[2025-06-23 19:29:03] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:44:33] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_00F76326-6CEF-4BE6-8DF5-B31A7F8B5B79_1750704273/Path000039_202506231944
+[2025-06-23 19:44:33] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000039_202506231944
+[2025-06-23 19:44:33] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 19:51:02] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_E8C9764D-9186-4092-89AB-EF44E532950C_1750704662/Path000040_202506231951
+[2025-06-23 19:51:02] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000040_202506231951
+[2025-06-23 19:51:02] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 20:03:33] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_2B8EB7B9-C42A-462D-9063-805F6C500794_1750705413/Path000041_202506232003
+[2025-06-23 20:03:33] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000041_202506232003
+[2025-06-23 20:03:33] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 20:10:32] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_6B45EF06-B499-48E5-A39A-054F0E94B943_1750705832/Path000042_202506232010
+[2025-06-23 20:10:32] TIERED STORAGE: Final destination will be HOT storage: /data/polyzoomer/Path000042_202506232010
+[2025-06-23 20:10:32] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 20:28:02] TIERED STORAGE: Creating local processing directory: /tmp/polyscope_processing_95836CBC-DA55-4ACC-BAFB-3FB9E2F45FFB_1750706882/Path000043_202506232028
+[2025-06-23 20:28:02] TIERED STORAGE: Target hot storage path: /data/polyzoomer/Path000043_202506232028
+[2025-06-23 20:28:02] TIERED STORAGE: Copying file to local storage for processing
+[2025-06-23 21:35:31] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A3F6EB5C-601C-46C2-92DA-2C45A6E43A3D_1750710931/Path000044_202506232135
+[2025-06-23 21:35:31] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:38:31] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_478A390C-93EA-4760-9050-29B0AD4238C5_1750711111/Path000045_202506232138
+[2025-06-23 21:38:31] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:38:31] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_478A390C-93EA-4760-9050-29B0AD4238C5_1750711111/Path000046_202506232138
+[2025-06-23 21:38:31] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:39:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A042A15D-1BD0-4DD4-936C-594D0AB90F01_1750711141/Path000047_202506232139
+[2025-06-23 21:39:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:39:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_75B5A734-C38A-4290-8168-D98479697A77_1750711142/Path000048_202506232139
+[2025-06-23 21:39:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:39:27] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_75B5A734-C38A-4290-8168-D98479697A77_1750711167/Path000049_202506232139
+[2025-06-23 21:39:27] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 21:39:27] Copying to local failed: /var/www/uploads/64496295_MS014S1_MU.png -> /tmp/polyscope_processing_75B5A734-C38A-4290-8168-D98479697A77_1750711167/Path000049_202506232139/MS014S1_MU.png
+[2025-06-23 22:04:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_BEC34AFA-C9A0-4033-B177-5EBC7051FAB2_1750712672/Path000050_202506232204
+[2025-06-23 22:04:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:05:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_75EDFDF4-9610-4D8D-8036-51C99A76100D_1750712701/Path000051_202506232205
+[2025-06-23 22:05:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:05:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_3083F4BF-DC7A-499D-94A9-52228C5349C6_1750712702/Path000052_202506232205
+[2025-06-23 22:05:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:05:22] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_18A10D98-5D2D-4167-9EDA-D2A94E4564E1_1750712722/Path000053_202506232205
+[2025-06-23 22:05:22] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:06:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_6498BD6C-D1B4-4BF1-91F2-B4517F51C238_1750712762/Path000054_202506232206
+[2025-06-23 22:06:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:06:08] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_3083F4BF-DC7A-499D-94A9-52228C5349C6_1750712768/Path000055_202506232206
+[2025-06-23 22:06:08] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:06:08] Copying to local failed: /var/www/uploads/64658465_MS008S1_MU.png -> /tmp/polyscope_processing_3083F4BF-DC7A-499D-94A9-52228C5349C6_1750712768/Path000055_202506232206/MS008S1_MU.png
+[2025-06-23 22:06:08] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_18A10D98-5D2D-4167-9EDA-D2A94E4564E1_1750712768/Path000056_202506232206
+[2025-06-23 22:06:08] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-23 22:06:08] Copying to local failed: /var/www/uploads/80949420_MS004S1.png -> /tmp/polyscope_processing_18A10D98-5D2D-4167-9EDA-D2A94E4564E1_1750712768/Path000056_202506232206/MS004S1.png
+[2025-06-23 23:22:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_803FC050-4167-4F16-BBFD-D796FF90111F_1750717323/Path000030_202506232322
+[2025-06-23 23:22:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:03:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_063516E9-C336-4623-8FFB-E154B209099C_1750719782/Path000031_202506240003
+[2025-06-24 00:03:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:03:24] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E14F1651-456C-496F-ABF9-31FE1EA50AF4_1750719804/Path000032_202506240003
+[2025-06-24 00:03:24] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:03:52] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_1FC70220-CE8A-4A4F-99C1-EF0EE190DCAB_1750719832/Path000033_202506240003
+[2025-06-24 00:03:52] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:04:06] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_F5DE9E5C-C7D4-433D-A604-03C2B0AD65CC_1750719846/Path000034_202506240004
+[2025-06-24 00:04:06] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:11:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_30451E29-C902-4067-A63B-E9CFD9545114_1750720262/Path000035_202506240011
+[2025-06-24 00:11:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:11:15] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_4ECAF895-A73A-460F-9EA4-8A8A2A9BB3C2_1750720275/Path000036_202506240011
+[2025-06-24 00:11:15] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:11:37] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A875456A-3941-4A1D-A079-17B519B00D69_1750720297/Path000037_202506240011
+[2025-06-24 00:11:37] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 00:12:04] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_79C2BD90-5C3F-487F-AF36-4A9A4051F303_1750720324/Path000038_202506240012
+[2025-06-24 00:12:04] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 03:17:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_D33BFF25-92D0-4235-B04C-49B24CF55E22_1750731422/Path000039_202506240317
+[2025-06-24 03:17:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 03:19:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_6E07AFCC-EDD6-47D7-B928-B10A1927D0D5_1750731572/Path000040_202506240319
+[2025-06-24 03:19:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 03:29:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_2E0BC743-378D-48BE-A28B-8375763FC8FD_1750732141/Path000041_202506240329
+[2025-06-24 03:29:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 03:40:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_845A9E00-8582-40C1-ACC3-7E7FAD800B27_1750732802/Path000042_202506240340
+[2025-06-24 03:40:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 03:53:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5B6E0DAB-81EA-4E93-BF08-0668FC63194F_1750733583/Path000043_202506240353
+[2025-06-24 03:53:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:10:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E4EC1455-609F-4B1B-8AD8-68A597693BAC_1750734602/Path000044_202506240410
+[2025-06-24 04:10:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:14:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_07373B37-1C8B-42CB-B3BF-A084C2E42C3D_1750734842/Path000045_202506240414
+[2025-06-24 04:14:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:14:22] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_C422E2FC-9260-4B32-8AB8-81D2E73AF0FC_1750734862/Path000046_202506240414
+[2025-06-24 04:14:22] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:24:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_2A0D09A1-571E-4037-ABD6-5424A15F0489_1750735442/Path000047_202506240424
+[2025-06-24 04:24:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:33:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_0325B9CD-7049-4EA4-A5AC-00E3D88DAC01_1750735982/Path000048_202506240433
+[2025-06-24 04:33:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 04:39:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5978611C-0F66-4DDB-83D6-FA7A636AA769_1750736372/Path000049_202506240439
+[2025-06-24 04:39:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 16:05:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_4F0DC682-3A3D-48A5-AA93-115CE56A559D_1750777502/Path000050_202506241605
+[2025-06-24 16:05:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 16:12:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_8530AA0C-70EC-44EF-946B-37BB639CD4C7_1750777952/Path000051_202506241612
+[2025-06-24 16:12:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 16:18:31] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_1CC216F3-405B-4424-A9F9-DB0BB617B3EB_1750778311/Path000052_202506241618
+[2025-06-24 16:18:31] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 16:22:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_625B1EC9-5B85-492D-AEED-17D374FCA014_1750778552/Path000053_202506241622
+[2025-06-24 16:22:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:10:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_6EF186B4-8F1E-477A-B3C1-C1605B3445EF_1750785002/Path000054_202506241810
+[2025-06-24 18:10:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:28:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_EB3E226F-DF53-4D89-B4B6-B1CB6C6E2C4A_1750786112/Path000055_202506241828
+[2025-06-24 18:28:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:34:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_01953680-46AD-4708-9DAA-24F9CBCF90D1_1750786442/Path000056_202506241834
+[2025-06-24 18:34:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:36:33] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_FE9D2AB7-C05E-40CA-BD1E-B6083AD757E9_1750786593/Path000057_202506241836
+[2025-06-24 18:36:33] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:41:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_9FCDE06B-EA4C-4AD3-84F4-9F8876982188_1750786892/Path000058_202506241841
+[2025-06-24 18:41:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:44:07] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E727053F-566B-432D-812F-199CD865EFA9_1750787047/Path000059_202506241844
+[2025-06-24 18:44:07] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:47:33] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_3D781114-1FED-446F-8971-3014D3DC7BBF_1750787253/Path000060_202506241847
+[2025-06-24 18:47:33] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 18:50:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_74D70D08-F9C5-46A3-B266-F218602D59E9_1750787402/Path000061_202506241850
+[2025-06-24 18:50:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:06:04] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_0EA5FB22-BB8D-4042-897C-2F5311D017A8_1750791964/Path000062_202506242006
+[2025-06-24 20:06:04] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:10:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_2E924EA1-D98E-4908-88A2-361D5FE882DD_1750792202/Path000063_202506242010
+[2025-06-24 20:10:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:13:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_41B86F2F-416E-46B0-9B69-AAA8FF78C7F5_1750792382/Path000064_202506242013
+[2025-06-24 20:13:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:23:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5B278658-F592-46F0-BDA8-5A6409202FB5_1750792982/Path000065_202506242023
+[2025-06-24 20:23:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:37:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_456D093A-2FC2-4212-91A2-353752CB5D98_1750793822/Path000066_202506242037
+[2025-06-24 20:37:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 20:48:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_B4D580C7-F2C0-4AA1-912D-07825020401A_1750794482/Path000067_202506242048
+[2025-06-24 20:48:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:01:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_FB4020BF-BCA3-4339-A05E-58B43A6BC2C3_1750795292/Path000068_202506242101
+[2025-06-24 21:01:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:09:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_A0D7CDEC-A0B6-41DB-BE39-C9B07C7CE5E5_1750795743/Path000069_202506242109
+[2025-06-24 21:09:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:18:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_0E7BE264-2923-4590-9D0A-D618F08B4B64_1750796283/Path000070_202506242118
+[2025-06-24 21:18:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:29:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_DFE25B32-0135-49DA-81C2-5B705E25A307_1750796942/Path000071_202506242129
+[2025-06-24 21:29:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:32:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_ECAAC4A5-2CF2-4427-AD89-2CBD53CBB635_1750797152/Path000072_202506242132
+[2025-06-24 21:32:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-06-24 21:35:33] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_BBE1C6A8-8E66-401A-B2A9-D9F0095E8D16_1750797333/Path000073_202506242135
+[2025-06-24 21:35:33] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 17:05:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_645720CE-CFFF-401C-AD00-2400B0DDA940_1754323532/Path000080_202508041705
+[2025-08-04 17:05:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 17:09:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5309A521-6185-4ECF-932C-98AB20315223_1754323742/Path000081_202508041709
+[2025-08-04 17:09:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 17:12:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_29DEDA9E-C809-448D-9CFE-5F8E81D8D913_1754323952/Path000082_202508041712
+[2025-08-04 17:12:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 18:39:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_896410B3-87AC-4E0C-96DE-9F7D475ACF83_1754329142/Path000083_202508041839
+[2025-08-04 18:39:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 18:51:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_64989C95-F5AA-4059-8CBB-F57225955E55_1754329863/Path000084_202508041851
+[2025-08-04 18:51:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:00:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_4AF87573-84FA-47AA-8C8F-C3F2D0E0A98E_1754330432/Path000085_202508041900
+[2025-08-04 19:00:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:04:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E99B28F7-646D-4F39-975C-0292091B2306_1754330672/Path000086_202508041904
+[2025-08-04 19:04:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:12:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_5411CB74-60F3-4EBF-B0D1-C606925071C3_1754331152/Path000087_202508041912
+[2025-08-04 19:12:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:30:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_D9FA6CCB-A575-4F90-B373-019B76E57210_1754332202/Path000088_202508041930
+[2025-08-04 19:30:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:38:31] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_07B966BA-DE10-4327-9258-F01DADE6D990_1754332711/Path000089_202508041938
+[2025-08-04 19:38:31] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:49:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_4CACF37F-419D-4DFE-B2DE-7CC07D69A763_1754333342/Path000090_202508041949
+[2025-08-04 19:49:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:51:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E577A318-7A30-422E-939E-90479D1D6AED_1754333492/Path000091_202508041951
+[2025-08-04 19:51:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 19:54:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_45BB5BED-3EA6-4EAD-8473-73AC22DEE0A7_1754333672/Path000092_202508041954
+[2025-08-04 19:54:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 20:00:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_27115AD3-6271-44B0-B31D-707905808A76_1754334032/Path000093_202508042000
+[2025-08-04 20:00:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 20:12:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_F4814986-F582-477A-AE6D-92CAECB66906_1754334722/Path000094_202508042012
+[2025-08-04 20:12:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 20:23:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_861D995C-23E6-41FD-B295-4CC3D6B6D8C5_1754335382/Path000095_202508042023
+[2025-08-04 20:23:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 20:41:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_4CC54323-473B-49C8-9676-FEBC54C3D301_1754336492/Path000096_202508042041
+[2025-08-04 20:41:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 20:51:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_1D5E9F05-72B4-4E99-A75A-680708D9E876_1754337092/Path000097_202508042051
+[2025-08-04 20:51:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 21:01:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_653D3FF1-08FF-4119-B055-7C8D8F0C3D86_1754337662/Path000098_202508042101
+[2025-08-04 21:01:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 21:19:01] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E730C95C-05B2-4013-86CF-C3AD96886E8A_1754338741/Path000099_202508042119
+[2025-08-04 21:19:01] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 21:30:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E9C96679-D57C-4EBF-B9B8-1E61F29A8EED_1754339432/Path000100_202508042130
+[2025-08-04 21:30:32] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-04 21:39:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_EE84CBB4-C77D-47AA-A013-8C4B06E9ABEC_1754339943/Path000101_202508042139
+[2025-08-04 21:39:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-05 17:03:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_E9A93E18-62C7-4801-9DDC-CD38750A10C3_1754409782/Path000102_202508051703
+[2025-08-05 17:03:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-05 19:06:02] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_B1E8645F-75B5-416F-B87C-320338EDCF64_1754417162/Path000103_202508051906
+[2025-08-05 19:06:02] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-05 19:25:38] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_6D4DD760-9C73-48B6-BBDA-DE444D70AF54_1754418338/Path000104_202508051925
+[2025-08-05 19:25:38] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-05 20:10:03] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_48B6722D-5531-4B54-992D-1DAE5026B2F9_1754421003/Path000105_202508052010
+[2025-08-05 20:10:03] OPTIMIZATION: Copying file to local storage for processing
+[2025-08-05 20:18:32] OPTIMIZATION: Creating local processing directory: /tmp/polyscope_processing_831845D7-41AD-4AA5-BDB4-D46E95916ED5_1754421512/Path000106_202508052018
+[2025-08-05 20:18:32] OPTIMIZATION: Copying file to local storage for processing

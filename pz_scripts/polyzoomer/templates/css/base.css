@@ -1,0 +1,57 @@
+/*
+   Base Styles - Variables, Reset, Typography
+   Author: Sebastian Schmittner
+   Updated: Medical/Scientific Application Base
+*/
+
+/* CSS Variables for Medical Color Scheme */
+:root {
+    font-size: 100%;
+    /* Medical Color Palette */
+    --header-bg: #2c3e50;
+    --sidebar-bg: #f8f9fa;
+    --accent-color: #4285f4;
+    --danger-color: #ff4444;
+    --success-color: #28a745;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #e9ecef;
+    --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+    --transition-smooth: all 0.3s ease;
+  }
+  
+  *,
+  *:before,
+  *:after {
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: var(--text-primary);
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+  
+  /* Links */
+  a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+  }
+  
+  a:hover {
+    color: #3367d6;
+  }
+  
+  /* Clean up unused styles */
+  table {
+    display: none;
+  }

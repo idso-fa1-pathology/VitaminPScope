@@ -1,0 +1,11 @@
+services:
+  polyscope-doc:
+    container_name: polyscope-doc
+    build: 
+      context: .
+      dockerfile: dockerfile.doc
+    image: polyscope-doc
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/docs

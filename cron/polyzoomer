@@ -1,0 +1,4 @@
+# /etc/cron.d/polyzoomer 
+# This purges the image magick temp files
+
+0 * * * * root [ rm /tmp/*magick* ]  

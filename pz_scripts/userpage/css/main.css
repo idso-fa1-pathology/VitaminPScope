@@ -1,0 +1,431 @@
+/* main.less
+   Author: Sebastian Schmittner
+   Date: 2015.06.20
+   LastAuthor: Sebastian Schmittner
+   LastDate: 2015.08.06 23:00:08 (+02:00)
+   Version: 0.0.1
+*/
+/* definitions */
+.fixleft {
+  left: 0px;
+}
+.fixright {
+  right: 0px;
+}
+.fixtop {
+  top: 0px;
+}
+.fixbottom {
+  bottom: 0px;
+}
+/* body */
+:root {
+  font-size: 100%;
+}
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  /* Safari/Chrome, other WebKit */
+  -moz-box-sizing: border-box;
+  /* Firefox, other Gecko */
+}
+html {
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  /* Safari/Chrome, other WebKit */
+  -moz-box-sizing: border-box;
+  /* Firefox, other Gecko */
+}
+body {
+  font-family: Arial, sans-serif;
+  font-size: 1em;
+  background-color: #ffffff;
+  color: #000000;
+}
+h1 {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 100;
+}
+h3 {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 100;
+}
+p {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+blockquote {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+pre {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+a {
+  text-decoration: none;
+}
+a:link {
+  color: #000000;
+}
+a:visited {
+  color: #000000;
+}
+a:focus {
+  color: #000000;
+}
+a:hover {
+  color: #0000ff;
+}
+a:active {
+  color: #0000ff;
+}
+.main {
+  position: absolute;
+  margin: 0px;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+}
+.header {
+  background: #15c6d6 url("../images/ui-bg_highlight-soft_75_00aaff_1x100.png") 50% 50% repeat-x;
+  color: #feffff;
+  height: 4.5rem;
+}
+.header .title {
+  margin: 0%;
+}
+.header .email {
+  margin: 0%;
+}
+.header div {
+  text-align: center;
+}
+/* left pane */
+.leftpane {
+  position: absolute;
+  width: 270px;
+  min-width: 270px;
+  display: inline;
+  float: left;
+  top: 4.5rem;
+  left: 0px;
+  bottom: 0px;
+}
+.sortingmenu {
+  width: 50px;
+  float: left;
+  height: 100%;
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+  left: 0px;
+  top: 0px;
+  right: 0px;
+}
+.samplelist {
+  height: 100%;
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+  left: 50px;
+  overflow: hidden;
+  overflow-y: scroll;
+}
+.samplelist table {
+  width: 100%;
+}
+.samplelist table img {
+  margin: 3px;
+  //width: 90%;
+  height: auto;
+}
+
+.samplelist table img[data-type="singleZoom"]{
+  border-style: solid;
+  border-color: #0088ff;
+  border-width: 1px;
+}
+
+.samplelist table img[data-type="multiZoom"]{
+  border-style: solid;
+  border-color: #00eeff;
+  border-width: 1px;
+}
+
+/* right pane */
+.rightpane {
+  position: absolute;
+  top: 4.5rem;
+  right: 0px;
+  bottom: 0px;
+  left: 276px;
+}
+.rightpane .centerPage {
+  height: 100%;
+  top: 0%;
+  width: 100%;
+  left: 0%;
+}
+.rightpane .centerPage .raster {
+  height: 100%;
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+  bottom: 0px;
+}
+.rightpane .centerPage .sampleCell {
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+}
+.selectionList {
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+  width: 90%;
+  height: 50%;
+  overflow-y: scroll;
+}
+/* elements */
+div.icon.trash {
+  position: absolute;
+  margin: 5px;
+  top: 0px;
+  right: 0px;
+  background: url('../images/userpage_delete_rest.png') 0 0;
+}
+div.icon.trash:hover {
+  background: url('../images/userpage_delete_hover.png') 0 0;
+}
+div.icon.trash:active {
+  background: url('../images/userpage_delete_pressed.png') 0 0;
+}
+div.icon.alpha {
+  position: absolute;
+  margin: 5px;
+  top: 0px;
+  right: 32px;
+  background: url('../images/userpage_alpha_rest.png') 0 0;
+}
+div.icon.alpha:hover {
+  background: url('../images/userpage_alpha_hover.png') 0 0;
+}
+div.icon.alpha:active {
+  background: url('../images/userpage_alpha_pressed.png') 0 0;
+}
+div.icon.alpha.active {
+  background: url('../images/userpage_alpha_pressed.png') 0 0;
+}
+/*
+	Buttons
+*/
+div.button {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: inline-block;
+}
+div.button#createZoom {
+  background: url('../images/userpage_multi_rest.png') 0 0;
+}
+div.button#createZoom:hover {
+  background: url('../images/userpage_multi_hover.png') 0 0;
+}
+div.button#createZoom:active {
+  background: url('../images/userpage_multi_pressed.png') 0 0;
+}
+div.button.filter {
+  background: url('../images/userpage_filter_rest.png') 0 0;
+}
+div.button.filter:hover {
+  background: url('../images/userpage_filter_hover.png') 0 0;
+}
+div.button.filter:active {
+  background: url('../images/userpage_filter_pressed.png') 0 0;
+}
+div.button.filter.filterOn {
+  background: url('../images/userpage_filter_pressed.png') 0 0;
+}
+div.button.sort {
+  background: url('../images/userpage_sort_rest.png') 0 0;
+}
+div.button.sort:hover {
+  background: url('../images/userpage_sort_hover.png') 0 0;
+}
+div.button.sort:active {
+  background: url('../images/userpage_sort_pressed.png') 0 0;
+}
+div.button.deleteZooms {
+  background: url('../images/userpage_delete_large_rest.png') 0 0;
+}
+div.button.deleteZooms:hover {
+  background: url('../images/userpage_delete_large_hover.png') 0 0;
+}
+div.button.deleteZooms:active {
+  background: url('../images/userpage_delete_large_pressed.png') 0 0;
+}
+/*
+	Span Tag System
+*/
+span .tag {
+  color: #FFF;
+  background-color: transparent;
+}
+span .tag .spanActive {
+  color: #000;
+  background-color: #FFFF00;
+}
+span .tag .spanMatch {
+  color: #000;
+  background-color: #00FF00;
+}
+#tagselector {
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+}
+#tagselector p {
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+#tagselector label {
+  display: block;
+}
+#tagselector label:hover {
+  background-color: #888;
+}
+#tagBlocker {
+  z-index: 200;
+  background-color: rgba(80, 80, 80, 0.8);
+  display: none;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+div.pageContainer {
+	height: 100%
+}
+
+.splitterCss {
+	width: 6px;
+	background: initial;
+	background-color: #00aaff;
+	height: 100%;
+	margin-left: 270px;
+	background: -webkit-repeating-linear-gradient(
+		45deg,
+		#00AAFF,
+		#00AAFF 10px,
+		#CDEFFF 10px,
+		#CDEFFF 20px
+	);
+	background: -o-repeating-linear-gradient(
+		45deg,
+		#00AAFF,
+		#00AAFF 10px,
+		#CDEFFF 10px,
+		#CDEFFF 20px
+	);
+	background: -moz-repeating-linear-gradient(
+		45deg,
+		#00AAFF,
+		#00AAFF 10px,
+		#CDEFFF 10px,
+		#CDEFFF 20px
+	);
+	background: repeating-linear-gradient(
+		45deg,
+		#00AAFF,
+		#00AAFF 10px,
+		#CDEFFF 10px,
+		#CDEFFF 20px
+	);	
+}
+
+.splitterHoverCss {
+	width: 6px;
+	background: -webkit-repeating-linear-gradient(
+		45deg,
+		#999,
+		#999 10px,
+		#CCC 10px,
+		#CCC 20px
+	);
+	background: -o-repeating-linear-gradient(
+		45deg,
+		#999,
+		#999 10px,
+		#CCC 10px,
+		#CCC 20px
+	);
+	background: -moz-repeating-linear-gradient(
+		45deg,
+		#999,
+		#999 10px,
+		#CCC 10px,
+		#CCC 20px
+	);
+	background: repeating-linear-gradient(
+		45deg,
+		#999,
+		#999 10px,
+		#CCC 10px,
+		#CCC 20px
+	);	
+}
+
+.selected {
+	/*border: 1px solid #F80;*/
+	background-color: #FD0;
+}
+
+div.button#createFolder {
+  background: url('../images/userpage_newfolder_rest.png') 0 0;
+  background-position: 50% 0;
+  background-repeat: no-repeat;
+}
+div.button#createFolder:hover {
+  background: url('../images/userpage_newfolder_hover.png') 0 0;
+}
+div.button#createFolder:active {
+  background: url('../images/userpage_newfolder_pressed.png') 0 0;
+}
+div.button#createFolder.active {
+  background: url('../images/userpage_newfolder_pressed.png') 0 0;
+}
+
+div.verticalSlider {
+  position: relative;
+  margin-left: 17px;
+  width: 14px;
+  display: inline-block;
+  height: 10em;
+  top: 20px;
+}
+
+.framed {
+	border: 2px solid #F80;
+	background-color: #FD0;
+}
+
+.currentPath {
+    height: 1.0rem;
+    width: 100%;
+  border-style: solid;
+  border-color: #00aaff;
+  border-width: 1px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+}

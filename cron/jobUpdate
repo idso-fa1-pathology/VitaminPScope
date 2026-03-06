@@ -1,0 +1,4 @@
+# /etc/cron.d/jobUpdate
+# This runs the job update routine in predefined intervals
+
+0 * * * * root [ /etc/cron/jobUpdate.task ]   

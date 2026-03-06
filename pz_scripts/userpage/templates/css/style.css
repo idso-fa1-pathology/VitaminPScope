@@ -1,0 +1,271 @@
+/*
+   Author: Sebastian Schmittner (stp.schmittner@gmail.com)
+   Date: 2014.04.04
+   LastAuthor: Sebastian Schmittner (stp.schmittner@gmail.com)
+   LastDate: 2015.12.17
+   Version: 0.0.4
+*/
+
+/* body */
+:root {
+  font-size: 100%;
+}
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  /* Safari/Chrome, other WebKit */
+  -moz-box-sizing: border-box;
+  /* Firefox, other Gecko */
+}
+
+body {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+  font-size: 1em;
+  background-color: #ffffff;
+  color: #000000;
+  height: 100%;
+  margin: 10px;
+}
+h1 {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 100;
+  font-size: 4em;
+  margin: 25px;
+}
+h3 {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 100;
+}
+p {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+blockquote {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+pre {
+  font-family: 'Segoe UI', Frutiger, 'Frutiger Linotype', 'Dejavu Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-weight: normal;
+}
+a {
+  text-decoration: none;
+}
+a:link {
+  color: #000000;
+}
+a:visited {
+  color: #000000;
+}
+a:focus {
+  color: #000000;
+}
+a:hover {
+  color: #0000ff;
+}
+a:active {
+  color: #0000ff;
+}
+
+.header {
+  border-bottom: 1px solid;
+  width:100%;
+  display:inline-block;
+  text-align:center	
+}
+
+#container {
+    margin:     0 auto;
+    width:      800px;
+    padding:    1.0em;
+    background-color: #FFF; 
+
+}
+div noscript{
+    text-align:center;
+}
+noscript p{
+    position: absolute;
+    z-index: 99;
+    color: red;
+    text-align: center;
+    width: 700px;
+}
+
+h1 { font-size: 3.8em; color: #000; margin: 0 3px 0.5em 3px; }
+h1 .small { font-size: 0.4em; }
+h1 a { text-decoration: none }
+h1 .version {
+    font-size: 16px;
+    margin-left: 4px;
+}
+h1 .tagline {
+    font-size: 12px;
+    float: left;
+    margin-top: 5px;
+    margin-left: 10px;
+}
+h2 { 
+    font-size: 1.5em; 
+    color: #000; 
+    text-align: left; 
+    padding: 1em 0 0 1em;
+}
+h3 { 
+    font-size: 1.1em; 
+    color: #800; 
+    text-align: center;
+    padding-top: 1em;
+}
+ul h3 { text-align: left;}
+ul { list-style: none; padding: 0px 4em; }
+ul ul{ list-style: square}
+a { color: #000; }
+p { padding: 0 1.5em; }
+.elevator {
+    font-size: 1.2em;
+    margin: 2em 5em;
+    font-style: italic;
+}
+.description {
+    font-size: 1.2em;
+    margin: 2em 5em;
+    font-style: italic;
+    padding-bottom: 1em;
+    border-bottom: 1px dotted #000;
+    clear: both;
+}
+.description h3 {
+    margin-bottom: 0;
+}
+.description p {
+    margin-bottom: 0;
+}
+.download { float: right; }
+.navigation{
+    border-left: 1px dotted #000;
+    float: right;
+    width: 200px;
+    clear: both;
+    margin: 20px;
+}
+.navigation ul{
+    margin: 0 0 0 25px;
+    padding: 10px;
+    list-style: square;
+    
+}
+.navigation ul li{
+    margin-bottom: 5px;
+}
+.demoarea{
+    clear: both;
+}
+.license ul.copyrights{
+    padding: 0 1.5em;
+}
+.license ul.conditions{
+    list-style: square;
+}
+.footer{
+    margin: 25px 0 0 0;
+    border-top: 2px dotted #000;
+    padding: 15px 0 0 0;
+    text-align: center;
+    clear: both;
+}
+.footer li{
+    font-size: 12px;
+    display: inline;
+}
+.footer li:before{
+    content: "| ";
+    color: #000;
+    margin: 0 4px;
+}
+.footer li:first-child:before{
+    content: "";
+    margin: 0;
+}
+pre { 
+    background-color: #FFF;
+    border: 1px solid #000;
+    font-size: 13px;
+    line-height: 19px;
+    overflow: auto;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #000;
+    width: auto;
+}
+hr { border: 0; width: 80%; border-bottom: 1px solid #000}
+
+/*
+ from openseadragon demos
+ */
+.openseadragon
+{
+    margin:     25px;
+    width:      800px;
+    height:     600px;
+    border:     1px solid #000;
+    color:      #000; /* text color for messages */
+    background-color: #000;
+}
+.openseadragon-small
+{
+    width:      40px;
+    height:     30px;
+    border:     1px solid #000;
+    color:      #000; /* text color for messages */
+    background-color: #000;
+}
+.demoheading {
+    color: #437AB2; 
+    padding: 0 0 0.2em 1em;
+}
+.toolbar
+{
+    width:      800px;
+    height:     33px;
+    border:     none;
+    color:      #000;
+    padding:    4px;
+    background-color: transparent;
+}
+.toolbar.fullpage{
+    width:      100%;
+    border:     none;
+    position:   fixed;
+    z-index:    999999;
+    left:       0;
+    top:        0;
+    background-color: #ccc;
+}
+
+#flightpathList .ui-selecting { background: #FECA40; }
+#flightpathList .ui-selected { background: #F39814; color: white; }
+#flightpathList { list-style-type: none; margin: 0; padding: 0; width: 100%; }
+/*#flightpathList li { margin: 3px; padding: 0.4em; font-size: 1em; height: 18px; }*/
+#flightpathList li { font-size: 1em; height: 18px; }
+#flightpathList{ border: 1px solid #666666; height: 200px; overflow: auto;
+}
+
+#flightpathListOuter {
+	padding-right: 4px;
+	width: 70%;
+}
+
+#flightpathListButtonsOuter {
+	padding-left: 4px;
+	width: 30%;
+}
+
+div.viewerTitle {
+	margin-left: 25px;
+	margin-bottom: -12px;
+	padding-top: 12px;
+}

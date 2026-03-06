@@ -1,0 +1,81 @@
+<!--
+*   Author: Sebastian Schmittner
+*   Date:
+*   LastAuthor: Sebastian Schmittner
+*   LastDate: 2014.12.07 10:05:49 (+01:00)
+*   Version: 0.1.1
+*   Version Key: VERSIONKEY
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" type="image/png" href="/LogoPolyzoomer1.0fav.png">
+    <meta charset="utf-8">
+    <title>Polyscope</title>
+    <link rel="stylesheet" href="../css/style.css"/>
+    <link rel="stylesheet" href="../css/annotation.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="../js/sgbeal-colorpicker-20070712.jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.1.0/openseadragon.min.js"></script>
+    <script src="../js/osd-lockButton.js"></script>
+    <script src="../js/openseadragon-svg-overlay.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@openseadragon-imaging/openseadragon-viewerinputhook@2.1.0/dist/openseadragon-viewerinputhook.min.js"></script>
+    <script src="../js/polyzoomerPlugin.js"></script>
+    <script src="../js/openseadragon-scalebar.js"></script>
+    <script src="../js/annotation.js"></script>
+<script>
+
+    var viewer = null;
+    var Seadragon;
+    Seadragon = OpenSeadragon;
+    OpenSeadragon.Utils = OpenSeadragon;
+	
+function SyncImage(viewer, viewerToSyncWith) {
+	console.log('Syncing');
+	viewer.viewport.panTo(viewerToSyncWith.viewport.getCenter());
+	viewer.viewport.zoomTo(viewerToSyncWith.viewport.getZoom());
+}
+
+var hFuncHandler=function myHandler(inViewer) {
+    
+  var SourceViewer = inViewer.eventSource;
+	var viewersToSync = [];
+	
+	for (var key in ViewerHash) {
+		if (ViewerHash.hasOwnProperty(key)) {
+			if(key != SourceViewer.id) {
+				if(ViewerHash[key].id == SourceViewer.id) {
+					viewersToSync.push(key);
+				}
+			}
+		}
+	}
+	
+	console.log('Hashes for SourceViewer: ', viewersToSync);
+    
+	for(var viewer = 0; viewer < viewersToSync.length; ++viewer) {
+		TargetViewer = window[viewersToSync[viewer]];   
+		
+		if (!TargetViewer.isOpen()) {
+			console.log('TargetViewer is not open');
+		}
+
+		console.log('Starting live sync...', SourceViewer.id, ' with ', TargetViewer.id);
+		SyncImage(TargetViewer,SourceViewer)      
+		console.log('done');
+	}
+}
+  
+function LiveSync(SourceViewer) {
+  console.log('Attaching live sync handler to ',SourceViewer.id);
+  SourceViewer.addHandler("animation",hFuncHandler);
+}
+
+function UnLiveSync(SourceViewer) {
+  console.log('Removing handler from ',SourceViewer.id);
+  SourceViewer.removeHandler("animation",hFuncHandler)
+}
+
+function SyncThemAll() {

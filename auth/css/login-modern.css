@@ -1,0 +1,577 @@
+/* Modern Polyscope Login Styles - login-modern.css */
+
+/* Modern CSS Variables */
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #dbeafe;
+    --secondary-color: #64748b;
+    --success-color: #059669;
+    --error-color: #dc2626;
+    --warning-color: #d97706;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border-color: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+}
+
+/* Override body styling for modern look */
+body, html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Animated background pattern */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+    animation: float 20s ease-in-out infinite;
+    z-index: 0;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-10px) rotate(1deg); }
+    66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+/* Floating particles effect */
+body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+    animation: particleFloat 25s ease-in-out infinite;
+    z-index: 0;
+}
+
+@keyframes particleFloat {
+    0%, 100% { transform: translateX(0px) translateY(0px) scale(1); }
+    33% { transform: translateX(30px) translateY(-30px) scale(1.1); }
+    66% { transform: translateX(-20px) translateY(20px) scale(0.9); }
+}
+
+/* Modern Navigation Bar */
+.modern-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 2rem;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.navbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.navbar-brand img {
+    height: 32px;
+    width: auto;
+}
+
+.navbar-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    position: relative;
+}
+
+.navbar-links a:hover {
+    color: var(--primary-color);
+}
+
+.navbar-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.navbar-links a:hover::after {
+    width: 100%;
+}
+
+/* Modern container adjustments */
+.container-login100 {
+    background: transparent;
+    padding-top: 120px; /* Account for fixed navbar */
+    position: relative;
+    z-index: 1;
+}
+
+/* Modern login card */
+.wrap-login100 {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 3rem 2rem;
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    transform: translateY(0);
+    animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(60px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Subtle card glow effect */
+.wrap-login100::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 24px;
+    z-index: -1;
+}
+
+/* Modern image section */
+.login100-pic {
+    width: 45%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.login100-pic img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.3s ease;
+}
+
+.login100-pic:hover img {
+    transform: scale(1.02);
+}
+
+/* Modern form section */
+.login100-form {
+    width: 55%;
+    padding-left: 3rem;
+}
+
+.login100-form-title {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: left;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
+    background: linear-gradient(135deg, var(--primary-color), #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login100-form-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+    line-height: 1.5;
+}
+
+/* Modern input styling */
+.wrap-input100 {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.input100 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    width: 100%;
+    height: 60px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0 1.5rem 0 3.5rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.input100:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    background: var(--bg-primary);
+}
+
+.input100::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* Modern icon styling */
+.symbol-input100 {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.input100:focus + .focus-input100 + .symbol-input100 {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Remove old focus effect */
+.focus-input100 {
+    display: none;
+}
+
+/* Password requirements */
+.password-requirements {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-requirements::before {
+    content: "ℹ️";
+    font-size: 1rem;
+}
+
+/* Modern button */
+.login100-form-btn {
+    width: 100%;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    border: none;
+    border-radius: var(--border-radius);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    box-shadow: var(--shadow-md);
+}
+
+.login100-form-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.login100-form-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.login100-form-btn:hover::before {
+    left: 100%;
+}
+
+.login100-form-btn:active {
+    transform: translateY(0);
+}
+
+/* Modern links */
+.txt2 {
+    color: var(--primary-color);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.txt2:hover {
+    color: var(--primary-hover);
+    text-decoration: none;
+}
+
+.txt2::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.txt2:hover::after {
+    width: 100%;
+}
+
+/* Modern error styling */
+.error-message {
+    background: var(--error-color);
+    color: white;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: shake 0.5s ease-in-out;
+}
+
+.error-message::before {
+    content: "⚠️";
+    font-size: 1.25rem;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Modern footer */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    z-index: 1000;
+}
+
+/* Loading state */
+.loading .login100-form-btn {
+    background: var(--secondary-color);
+    cursor: not-allowed;
+    transform: none;
+}
+
+.loading .login100-form-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced form validation */
+.input100.error {
+    border-color: var(--error-color);
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.input100.success {
+    border-color: var(--success-color);
+    background: rgba(5, 150, 105, 0.05);
+}
+
+/* Success message */
+.success-message {
+    background: var(--success-color);
+    color: white;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideInDown 0.5s ease-out;
+}
+
+.success-message::before {
+    content: "✅";
+    font-size: 1.25rem;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .navbar-content {
+        padding: 0 1rem;
+    }
+    
+    .wrap-login100 {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+    
+    .login100-pic {
+        width: 40%;
+    }
+    
+    .login100-form {
+        width: 60%;
+        padding-left: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-links {
+        display: none;
+    }
+    
+    .container-login100 {
+        padding-top: 100px;
+    }
+    
+    .wrap-login100 {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+    
+    .login100-pic {
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+    
+    .login100-form {
+        width: 100%;
+        padding-left: 0;
+    }
+    
+    .login100-form-title {
+        text-align: center;
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .modern-navbar {
+        padding: 0.75rem 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .navbar-brand img {
+        height: 28px;
+    }
+    
+    .wrap-login100 {
+        border-radius: 16px;
+        margin: 0.5rem;
+    }
+    
+    .login100-form-title {
+        font-size: 1.75rem;
+    }
+    
+    .input100,
+    .login100-form-btn {
+        height: 50px;
+        font-size: 0.9rem;
+    }
+}

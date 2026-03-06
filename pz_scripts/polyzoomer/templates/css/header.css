@@ -1,0 +1,84 @@
+/*
+   Header Styles - Top navigation and controls
+*/
+
+/* Modern Header Styling */
+.header {
+    background: var(--header-bg);
+    color: white;
+    padding: 15px 20px;
+    box-shadow: var(--shadow-medium);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  
+  /* Professional Header Controls */
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .app-title {
+    font-weight: 300;
+    font-size: 1.8rem;
+    margin: 0;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .app-title i {
+    color: var(--accent-color);
+    font-size: 2rem;
+  }
+
+  .app-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  .app-title a:hover {
+    text-decoration: underline;
+  }
+  
+  .slide-info {
+    font-size: 0.9rem;
+    color: #b8c5d1;
+    font-weight: 400;
+  }
+  
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .header-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 36px;
+  }
+  
+  .header-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }

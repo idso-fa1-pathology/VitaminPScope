@@ -1,0 +1,47 @@
+<!--
+*   Author: Sebastian Schmittner
+*   Date:
+*   LastAuthor: Sebastian Schmittner
+*   LastDate: 2014.12.07 10:05:49 (+01:00)
+*   Version: 0.1.1
+*   Version Key: VERSIONKEY
+*   Updated: Medical/Scientific Application Layout with Sharing Feature
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyscope - Pathology Viewer</title>
+    <link rel="icon" type="image/png" href="/LogoPolyzoomer1.0fav.png">
+	<link rel="stylesheet" href="../css/main.css"/>
+	<link rel="stylesheet" href="../css/sharing.css"/>
+	<link rel="stylesheet" href="../css/cell-segmentation.css"/>
+	<link rel="stylesheet" href="../css/navigation.css"/>
+    <link rel="stylesheet" href="../css/screenshot.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="../js/sgbeal-colorpicker-20070712.jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.1.0/openseadragon.min.js"></script>
+    <script src="../js/osd-lockButton.js"></script>
+    <script src="../js/openseadragon-svg-overlay.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/openseadragon/svg-overlay@master/openseadragon-svg-overlay.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/@openseadragon-imaging/openseadragon-viewerinputhook@2.1.0/dist/openseadragon-viewerinputhook.min.js"></script>
+    <script src="../polyzoomerPlugin.js"></script>
+    <script src="../js/openseadragon-scalebar.js"></script>
+	<script src="../js/main.js"></script>
+	<script src="../js/channel-manager.js"></script>
+	<script src="../js/sharing.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	<script src="../js/cell-segmentation.js"></script>
+	<script src="../js/simple-region-selector.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/screenshot.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../js/enhancedAnnotationManager.js"></script>
+    <script src="../js/tme-storage.js"></script>
+    <script src="../js/tme-segmentation.js"></script>
+</head>
