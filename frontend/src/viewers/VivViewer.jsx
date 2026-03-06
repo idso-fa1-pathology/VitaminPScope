@@ -49,34 +49,45 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
       try {
         setLoading(true);
         setError("");
-
+    
         const loaded = await loadOmeTiff(sourceUrl);
         if (cancelled) return;
-
-        setLoader(loaded);
-
-        const baseLoader = Array.isArray(loaded) ? loaded[loaded.length - 1] : loaded;
-        const width = containerRef.current.clientWidth || 1200;
-        const height = containerRef.current.clientHeight || 800;
+    
+        const normalizedLoader = Array.isArray(loaded) ? loaded : [loaded];
+        const baseLoader = normalizedLoader.find((item) => item && item.shape);
+    
+        if (!baseLoader) {
+          console.error("Invalid Viv loader:", loaded);
+          throw new Error("OME-TIFF loaded, but no raster source with shape was found.");
+        }
+    
+        if (typeof baseLoader.getRaster !== "function") {
+          throw new Error("Viv loader does not support getRaster().");
+        }
+    
+        setLoader(normalizedLoader);
+    
+        const width = containerRef.current?.clientWidth || 1200;
+        const height = containerRef.current?.clientHeight || 800;
         const initial = getDefaultInitialViewState(baseLoader, width, height);
-
+    
         if (!cancelled) {
           setViewState(initial);
         }
-
+    
         const channels = slideInfo.channels || [];
         const dtype = slideInfo.metadata?.dtype;
         const nextContrast = {};
-
+    
         for (const ch of channels) {
           try {
             const raster = await baseLoader.getRaster({
               selection: { c: ch.index, z: 0, t: 0 },
             });
-
+    
             const stats = getChannelStats(raster.data);
             let limits = stats?.contrastLimits || fallbackContrastLimits(dtype);
-
+    
             if (
               !Array.isArray(limits) ||
               limits.length !== 2 ||
@@ -84,13 +95,13 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
             ) {
               limits = stats?.domain || fallbackContrastLimits(dtype);
             }
-
+    
             nextContrast[ch.index] = limits;
           } catch (e) {
             nextContrast[ch.index] = fallbackContrastLimits(dtype);
           }
         }
-
+    
         if (!cancelled) {
           setContrastByChannel(nextContrast);
         }

@@ -1,5 +1,6 @@
 import os
 import base64
+from urllib.parse import quote
 import large_image
 from fastapi import FastAPI, Response, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -142,7 +143,7 @@ def get_viv_info(filename: str):
     return {
         "name": filename,
         "type": slide_type,
-        "source_url": f"http://localhost:8000/slide/{filename}/source",
+        "source_url": f"http://localhost:8000/slide/{quote(filename)}/source",
         "metadata": metadata,
         "channels": channels,
     }
@@ -151,11 +152,19 @@ def get_viv_info(filename: str):
 @app.get("/slide/{filename}/source")
 def get_slide_source(filename: str):
     filepath = get_slide_path(filename)
+    slide_type = detect_slide_type(filename)
+
+    if slide_type == "ome-tiff":
+        media_type = "image/tiff"
+    elif slide_type in ("tiff",):
+        media_type = "image/tiff"
+    else:
+        media_type = "application/octet-stream"
 
     return FileResponse(
         path=filepath,
         filename=filename,
-        media_type="application/octet-stream",
+        media_type=media_type,
     )
 
 
