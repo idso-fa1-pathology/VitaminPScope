@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+large-image
+large-image-source-openslide

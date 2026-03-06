@@ -1,0 +1,3 @@
+fastapi
+uvicorn
+# torch, torchvision, numpy will go here when we load the model

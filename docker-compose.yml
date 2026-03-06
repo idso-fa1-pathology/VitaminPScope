@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000
+      - VITE_AI_URL=http://localhost:8001
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/data  # Mounts your slide data here
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  ai_service:
+    build: ./ai_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ai_service:/app
+    # If you have a GPU, we will add deploy/resources here later
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
