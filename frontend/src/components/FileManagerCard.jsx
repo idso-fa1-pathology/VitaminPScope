@@ -18,7 +18,7 @@ function FileManagerCard({ item, onOpen, onRename, onDelete }) {
   const isFolder = item.kind === "folder";
 
   const handleCardClick = () => {
-    if (!isFolder) onOpen(item);
+    onOpen(item);
   };
 
   return (

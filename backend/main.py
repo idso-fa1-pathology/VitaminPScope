@@ -208,23 +208,34 @@ def read_root():
 
 
 @app.get("/slides")
-def list_slides():
+def list_slides(path: str = Query(default="")):
     ensure_data_dir()
 
-    entries = sorted(os.listdir(DATA_DIR), key=lambda x: x.lower())
+    relative_path = sanitize_relative_path(path)
+    target_dir = resolve_data_path(relative_path)
+
+    if not os.path.exists(target_dir):
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    if not os.path.isdir(target_dir):
+        raise HTTPException(status_code=400, detail="Path is not a folder")
+
+    entries = sorted(os.listdir(target_dir), key=lambda x: x.lower())
 
     folders = []
     slides = []
 
     for entry in entries:
-        full_path = os.path.join(DATA_DIR, entry)
+        full_path = os.path.join(target_dir, entry)
+        item_relative_path = os.path.relpath(full_path, DATA_DIR).replace("\\", "/")
 
         if os.path.isdir(full_path):
-            folders.append(build_folder_item(entry, entry))
+            folders.append(build_folder_item(entry, item_relative_path))
         elif os.path.isfile(full_path) and entry.lower().endswith(IMAGE_EXTENSIONS):
-            slides.append(build_slide_item(entry, entry))
+            slides.append(build_slide_item(entry, item_relative_path))
 
     return {
+        "current_path": relative_path,
         "folders": folders,
         "slides": slides,
     }

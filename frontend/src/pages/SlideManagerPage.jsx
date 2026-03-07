@@ -16,6 +16,7 @@ function SlideManagerPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [currentPath, setCurrentPath] = useState("");
 
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -28,11 +29,13 @@ function SlideManagerPage() {
 
   const navigate = useNavigate();
 
-  const loadSlides = async () => {
+  const loadSlides = async (path = currentPath) => {
     try {
       setLoading(true);
       setError("");
-      const data = await fetchSlides();
+
+      const data = await fetchSlides(path);
+
       setSlides(data.slides || []);
       setFolders(data.folders || []);
     } catch (err) {
@@ -44,22 +47,34 @@ function SlideManagerPage() {
   };
 
   useEffect(() => {
-    loadSlides();
-  }, []);
+    loadSlides(currentPath);
+  }, [currentPath]);
 
-  const handleOpenSlide = (slide) => {
-    if (slide.kind === "folder") return;
-    navigate(`/viewer/${encodeURIComponent(slide.name)}`);
+  const handleOpenItem = (item) => {
+    if (item.kind === "folder") {
+      setCurrentPath(item.path || item.name);
+      return;
+    }
+  
+    navigate(`/viewer/${encodeURIComponent(item.path || item.name)}`);
+  };
+
+  const handleGoBack = () => {
+    if (!currentPath) return;
+
+    const parts = currentPath.split("/").filter(Boolean);
+    parts.pop();
+    setCurrentPath(parts.join("/"));
   };
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) return;
 
     try {
-      await createFolder(folderName.trim());
+      await createFolder(folderName.trim(), currentPath);
       setFolderName("");
       setCreateFolderOpen(false);
-      await loadSlides();
+      await loadSlides(currentPath);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create folder.");
@@ -83,7 +98,7 @@ function SlideManagerPage() {
       setRenameOpen(false);
       setSelectedItem(null);
       setRenameValue("");
-      await loadSlides();
+      await loadSlides(currentPath);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to rename item.");
@@ -102,7 +117,7 @@ function SlideManagerPage() {
       await deleteItem(selectedItem.path || selectedItem.name);
       setDeleteOpen(false);
       setSelectedItem(null);
-      await loadSlides();
+      await loadSlides(currentPath);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to delete item.");
@@ -152,24 +167,37 @@ function SlideManagerPage() {
   return (
     <div className="slide-manager-page">
       <div className="slide-manager-shell">
-      <section className="manager-topbar">
-        <div>
-          <h1 className="app-title">VitaminPScope</h1>
-          <div className="manager-eyebrow">File Manager</div>
-        </div>
+        <section className="manager-topbar">
+          <div>
+            <h1 className="app-title">VitaminPScope</h1>
+            <div className="manager-eyebrow">File Manager</div>
+            <div className="manager-path-row">
+              <div className="manager-path">{currentPath || "Root"}</div>
+            </div>
+          </div>
 
-        <div className="toolbar-actions">
-          <button
-            className="primary-btn"
-            onClick={() => setCreateFolderOpen(true)}
-          >
-            New Folder
-          </button>
-          <button className="secondary-btn" onClick={loadSlides}>
-            Refresh
-          </button>
-        </div>
-      </section>
+          <div className="toolbar-actions">
+            {currentPath ? (
+              <button className="secondary-btn" onClick={handleGoBack}>
+                Back
+              </button>
+            ) : null}
+
+            <button
+              className="primary-btn"
+              onClick={() => setCreateFolderOpen(true)}
+            >
+              New Folder
+            </button>
+
+            <button
+              className="secondary-btn"
+              onClick={() => loadSlides(currentPath)}
+            >
+              Refresh
+            </button>
+          </div>
+        </section>
 
         <section className="slide-manager-stats slide-manager-stats--compact">
           <div className="stat-tile">
@@ -271,7 +299,7 @@ function SlideManagerPage() {
                 <FileManagerCard
                   key={`${item.kind}-${item.path || item.name}`}
                   item={item}
-                  onOpen={handleOpenSlide}
+                  onOpen={handleOpenItem}
                   onRename={openRenameModal}
                   onDelete={openDeleteModal}
                 />

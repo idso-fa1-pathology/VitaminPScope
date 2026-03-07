@@ -1,10 +1,23 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
-export async function fetchSlides() {
-  const res = await fetch(`${BACKEND_URL}/slides`);
-  if (!res.ok) {
-    throw new Error("Failed to fetch slides");
+export async function fetchSlides(path = "") {
+  const params = new URLSearchParams();
+
+  if (path) {
+    params.set("path", path);
   }
+
+  const query = params.toString();
+  const url = `${BACKEND_URL}/slides${query ? `?${query}` : ""}`;
+
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || "Failed to fetch slides");
+  }
+
   return res.json();
 }
 
@@ -123,7 +136,9 @@ export function buildSlideSourceUrl(slideName) {
 }
 
 export async function fetchVivInfo(slideName) {
-  const res = await fetch(`${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv`);
+  const res = await fetch(
+    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv`
+  );
 
   if (!res.ok) {
     const message = await res.text();

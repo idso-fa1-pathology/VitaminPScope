@@ -306,32 +306,37 @@ function ViewerPage() {
   const [enabledChannelIndexes, setEnabledChannelIndexes] = useState([]);
   const [activeTool, setActiveTool] = useState("pan");
 
+  const decodedSlidePath = decodeURIComponent(slideName || "");
+
   useEffect(() => {
     fetchSlides()
       .then((data) => {
         const allSlides = data.slides || [];
         setSlides(allSlides);
-
-        const decodedSlideName = decodeURIComponent(slideName || "");
-        const foundSlide = allSlides.find((slide) => slide.name === decodedSlideName);
-        setSelectedSlide(foundSlide || null);
       })
       .catch((err) => {
         console.error("Error fetching slides:", err);
         setSlides([]);
-        setSelectedSlide(null);
       });
-  }, [slideName]);
+  }, []);
 
   useEffect(() => {
-    if (!selectedSlide) {
+    if (!decodedSlidePath) {
+      setSelectedSlide(null);
       setSlideInfo(null);
       setChannelSettings({});
       setEnabledChannelIndexes([]);
       return;
     }
 
-    fetchSlideMetadata(selectedSlide.path || selectedSlide.name)
+    const filename = decodedSlidePath.split("/").pop() || decodedSlidePath;
+
+    setSelectedSlide({
+      name: filename,
+      path: decodedSlidePath,
+    });
+
+    fetchSlideMetadata(decodedSlidePath)
       .then((data) => {
         setSlideInfo(data);
 
@@ -357,11 +362,12 @@ function ViewerPage() {
       })
       .catch((err) => {
         console.error("Error loading metadata:", err);
+        setSelectedSlide(null);
         setSlideInfo(null);
         setChannelSettings({});
         setEnabledChannelIndexes([]);
       });
-  }, [selectedSlide]);
+  }, [decodedSlidePath]);
 
   const normalizedChannels = useMemo(() => normalizeChannels(slideInfo), [slideInfo]);
 
@@ -420,9 +426,9 @@ function ViewerPage() {
   };
 
   const handleSlideChange = (event) => {
-    const nextSlideName = event.target.value;
-    if (!nextSlideName || nextSlideName === selectedSlide?.name) return;
-    navigate(`/viewer/${encodeURIComponent(nextSlideName)}`);
+    const nextSlidePath = event.target.value;
+    if (!nextSlidePath || nextSlidePath === selectedSlide?.path) return;
+    navigate(`/viewer/${encodeURIComponent(nextSlidePath)}`);
   };
 
   const isOme = slideInfo?.type === "ome-tiff";
@@ -471,14 +477,17 @@ function ViewerPage() {
             <label className="viewer-slide-switcher__label">Switch slide</label>
             <select
               className="viewer-slide-switcher__select"
-              value={selectedSlide.name}
+              value={selectedSlide.path}
               onChange={handleSlideChange}
             >
-              {slides.map((slide) => (
-                <option key={slide.name} value={slide.name}>
-                  {slide.name}
-                </option>
-              ))}
+              <option value={selectedSlide.path}>{selectedSlide.name}</option>
+              {slides
+                .filter((slide) => (slide.path || slide.name) !== selectedSlide.path)
+                .map((slide) => (
+                  <option key={slide.path || slide.name} value={slide.path || slide.name}>
+                    {slide.name}
+                  </option>
+                ))}
             </select>
           </div>
 
