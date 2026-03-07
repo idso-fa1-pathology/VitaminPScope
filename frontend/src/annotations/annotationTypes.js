@@ -1,4 +1,5 @@
 export const TOOL_PAN = "pan";
+export const TOOL_SELECT = "select";
 export const TOOL_POINT = "point";
 export const TOOL_LINE = "line";
 export const TOOL_RECT = "rect";

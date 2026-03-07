@@ -7,6 +7,7 @@ import {
   TOOL_MEASURE,
   TOOL_PAN,
   TOOL_RECT,
+  TOOL_SELECT,
 } from "../annotations/annotationTypes";
 import AnnotationToolbar from "../annotations/AnnotationToolbar";
 import ChannelPanel from "../components/ChannelPanel";
@@ -266,8 +267,8 @@ function ViewerToolsSection({ onResetView, onZoomIn, onZoomOut, onSetTool }) {
         <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_MEASURE)} type="button">
           📏 Measurement mode
         </button>
-        <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_RECT)} type="button">
-          📝 Annotation mode
+        <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_SELECT)} type="button">
+          ↖ Select / edit
         </button>
         <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_AI)} type="button">
           🤖 AI overlay
@@ -324,7 +325,11 @@ function ViewerPage() {
   const [annotationColor, setAnnotationColor] = useState(DEFAULT_ANNOTATION_COLOR);
 
   const decodedSlidePath = decodeURIComponent(slideName || "");
-
+  useEffect(() => {
+    if (activeTool !== TOOL_SELECT) {
+      setSelectedAnnotationId(null);
+    }
+  }, [activeTool]);
   useEffect(() => {
     fetchSlides()
       .then((data) => {

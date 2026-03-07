@@ -6,6 +6,7 @@ import {
   TOOL_MEASURE,
   TOOL_POINT,
   TOOL_RECT,
+  TOOL_SELECT,
 } from "./annotationTypes";
 
 function clampNumber(value, fallback = 0) {
@@ -136,55 +137,88 @@ function pointToSegmentDistance(p, a, b) {
   return distance(p, proj);
 }
 
-function hitTestAnnotation(annotation, imagePoint) {
-  const tolerance = 12;
-
-  if (annotation.tool === TOOL_POINT) {
-    const d = distance(imagePoint, { x: annotation.x, y: annotation.y });
-    if (d <= tolerance) {
-      return {
-        hit: true,
-        type: "body",
-      };
-    }
+function pointToSegmentDistanceScreen(p, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+  
+    if (dx === 0 && dy === 0) return distance(p, a);
+  
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
+    const proj = {
+      x: a.x + t * dx,
+      y: a.y + t * dy,
+    };
+  
+    return distance(p, proj);
   }
-
-  if (annotation.tool === TOOL_LINE || annotation.tool === TOOL_MEASURE) {
-    if (distance(imagePoint, annotation.start) <= tolerance) {
-      return { hit: true, type: "handle-start" };
-    }
-
-    if (distance(imagePoint, annotation.end) <= tolerance) {
-      return { hit: true, type: "handle-end" };
-    }
-
-    if (pointToSegmentDistance(imagePoint, annotation.start, annotation.end) <= tolerance) {
-      return { hit: true, type: "body" };
-    }
-  }
-
-  if (annotation.tool === TOOL_RECT) {
-    const handles = getRectHandles(annotation);
-
-    for (const [key, value] of Object.entries(handles)) {
-      if (distance(imagePoint, value) <= tolerance) {
-        return { hit: true, type: "handle-rect", handle: key };
+  
+  function hitTestAnnotation(annotation, screenPoint, imageToScreen) {
+    const bodyTolerance = 10;
+    const handleTolerance = 18;
+  
+    if (annotation.tool === TOOL_POINT) {
+      const p = imageToScreen({ x: annotation.x, y: annotation.y });
+      const d = distance(screenPoint, p);
+  
+      if (d <= handleTolerance) {
+        return {
+          hit: true,
+          type: "body",
+        };
       }
     }
-
-    const inside =
-      imagePoint.x >= annotation.x &&
-      imagePoint.x <= annotation.x + annotation.width &&
-      imagePoint.y >= annotation.y &&
-      imagePoint.y <= annotation.y + annotation.height;
-
-    if (inside) {
-      return { hit: true, type: "body" };
+  
+    if (annotation.tool === TOOL_LINE || annotation.tool === TOOL_MEASURE) {
+      const start = imageToScreen(annotation.start);
+      const end = imageToScreen(annotation.end);
+  
+      if (distance(screenPoint, start) <= handleTolerance) {
+        return { hit: true, type: "handle-start" };
+      }
+  
+      if (distance(screenPoint, end) <= handleTolerance) {
+        return { hit: true, type: "handle-end" };
+      }
+  
+      if (pointToSegmentDistanceScreen(screenPoint, start, end) <= bodyTolerance) {
+        return { hit: true, type: "body" };
+      }
     }
+  
+    if (annotation.tool === TOOL_RECT) {
+      const handles = getRectHandles(annotation);
+  
+      for (const [key, value] of Object.entries(handles)) {
+        const handleScreen = imageToScreen(value);
+        if (distance(screenPoint, handleScreen) <= handleTolerance) {
+          return { hit: true, type: "handle-rect", handle: key };
+        }
+      }
+  
+      const topLeft = imageToScreen({ x: annotation.x, y: annotation.y });
+      const bottomRight = imageToScreen({
+        x: annotation.x + annotation.width,
+        y: annotation.y + annotation.height,
+      });
+  
+      const minX = Math.min(topLeft.x, bottomRight.x);
+      const maxX = Math.max(topLeft.x, bottomRight.x);
+      const minY = Math.min(topLeft.y, bottomRight.y);
+      const maxY = Math.max(topLeft.y, bottomRight.y);
+  
+      const inside =
+        screenPoint.x >= minX &&
+        screenPoint.x <= maxX &&
+        screenPoint.y >= minY &&
+        screenPoint.y <= maxY;
+  
+      if (inside) {
+        return { hit: true, type: "body" };
+      }
+    }
+  
+    return { hit: false };
   }
-
-  return { hit: false };
-}
 
 function normalizeRect(x1, y1, x2, y2) {
   return {
@@ -449,15 +483,19 @@ function AnnotationOverlay({
     return [TOOL_POINT, TOOL_LINE, TOOL_RECT, TOOL_MEASURE].includes(activeTool);
   }, [activeTool]);
   
-  const interactiveOverlayEnabled = useMemo(() => {
-    return activeTool !== "pan" && activeTool !== "ai";
+  const selectionEnabled = useMemo(() => {
+    return activeTool === TOOL_SELECT;
   }, [activeTool]);
+  
+  const interactiveOverlayEnabled = useMemo(() => {
+    return drawingEnabled || selectionEnabled;
+  }, [drawingEnabled, selectionEnabled]);
 
 
-  const findHit = (imagePoint) => {
+  const findHit = (screenPoint) => {
     for (let i = annotations.length - 1; i >= 0; i -= 1) {
       const annotation = annotations[i];
-      const result = hitTestAnnotation(annotation, imagePoint);
+      const result = hitTestAnnotation(annotation, screenPoint, imageToScreen);
       if (result.hit) {
         return {
           annotation,
@@ -476,77 +514,86 @@ function AnnotationOverlay({
     const imagePoint = screenToImage(screenPoint);
     if (!imagePoint) return;
 
-    const hit = findHit(imagePoint);
+    const hit = findHit(screenPoint);
 
-    if (hit) {
-      onSelectAnnotation?.(hit.annotation.id);
-
-      if (hit.annotation.tool === TOOL_POINT) {
-        setInteraction({
-          mode: "move-point",
-          annotationId: hit.annotation.id,
-        });
-        return;
-      }
-
-      if (hit.annotation.tool === TOOL_LINE || hit.annotation.tool === TOOL_MEASURE) {
-        if (hit.type === "handle-start") {
+    if (selectionEnabled && hit) {
+        const isAlreadySelected = selectedAnnotationId === hit.annotation.id;
+      
+        if (!isAlreadySelected) {
+          onSelectAnnotation?.(hit.annotation.id);
+          setInteraction(null);
+          return;
+        }
+      
+        if (hit.annotation.tool === TOOL_POINT) {
           setInteraction({
-            mode: "line-start",
+            mode: "move-point",
             annotationId: hit.annotation.id,
           });
           return;
         }
-
-        if (hit.type === "handle-end") {
+      
+        if (hit.annotation.tool === TOOL_LINE || hit.annotation.tool === TOOL_MEASURE) {
+          if (hit.type === "handle-start") {
+            setInteraction({
+              mode: "line-start",
+              annotationId: hit.annotation.id,
+            });
+            return;
+          }
+      
+          if (hit.type === "handle-end") {
+            setInteraction({
+              mode: "line-end",
+              annotationId: hit.annotation.id,
+            });
+            return;
+          }
+      
           setInteraction({
-            mode: "line-end",
+            mode: "move-line",
             annotationId: hit.annotation.id,
+            startPointer: imagePoint,
+            original: {
+              start: hit.annotation.start,
+              end: hit.annotation.end,
+            },
           });
           return;
         }
-
-        setInteraction({
-          mode: "move-line",
-          annotationId: hit.annotation.id,
-          startPointer: imagePoint,
-          original: {
-            start: hit.annotation.start,
-            end: hit.annotation.end,
-          },
-        });
-        return;
-      }
-
-      if (hit.annotation.tool === TOOL_RECT) {
-        if (hit.type === "handle-rect") {
+      
+        if (hit.annotation.tool === TOOL_RECT) {
+          if (hit.type === "handle-rect") {
+            setInteraction({
+              mode: "rect-handle",
+              annotationId: hit.annotation.id,
+              handle: hit.handle,
+            });
+            return;
+          }
+      
           setInteraction({
-            mode: "rect-handle",
+            mode: "move-rect",
             annotationId: hit.annotation.id,
-            handle: hit.handle,
+            startPointer: imagePoint,
+            original: {
+              x: hit.annotation.x,
+              y: hit.annotation.y,
+              width: hit.annotation.width,
+              height: hit.annotation.height,
+            },
           });
           return;
         }
-
-        setInteraction({
-          mode: "move-rect",
-          annotationId: hit.annotation.id,
-          startPointer: imagePoint,
-          original: {
-            x: hit.annotation.x,
-            y: hit.annotation.y,
-            width: hit.annotation.width,
-            height: hit.annotation.height,
-          },
-        });
+      
         return;
       }
-
+    
+    if (selectionEnabled) {
+      onSelectAnnotation?.(null);
       return;
     }
-
-    onSelectAnnotation?.(null);
-
+    
     if (!drawingEnabled) return;
 
     if (activeTool === TOOL_POINT) {

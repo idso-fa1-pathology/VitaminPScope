@@ -6,6 +6,7 @@ import {
     TOOL_PAN,
     TOOL_POINT,
     TOOL_RECT,
+    TOOL_SELECT,
   } from "./annotationTypes";
   
   function ToolButton({ active, onClick, children, title }) {
@@ -38,6 +39,14 @@ import {
           title="Pan"
         >
           ✋ Pan
+        </ToolButton>
+  
+        <ToolButton
+          active={activeTool === TOOL_SELECT}
+          onClick={() => onToolChange(TOOL_SELECT)}
+          title="Select and edit"
+        >
+          ↖ Select
         </ToolButton>
   
         <ToolButton

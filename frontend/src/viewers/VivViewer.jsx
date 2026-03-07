@@ -11,7 +11,7 @@ import DeckGL from "@deck.gl/react";
 import { OrthographicView } from "@deck.gl/core";
 import { loadOmeTiff, MultiscaleImageLayer } from "@hms-dbmi/viv";
 import AnnotationOverlay from "../annotations/AnnotationOverlay";
-import { TOOL_AI, TOOL_PAN } from "../annotations/annotationTypes";
+import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
 
 const API_BASE =
@@ -743,9 +743,11 @@ const VivViewer = forwardRef(function VivViewer(
             }}
             onAfterRender={handleAfterRender}
             layers={layer ? [layer] : []}
-            getCursor={() =>
-              activeTool === TOOL_PAN || activeTool === TOOL_AI ? "grab" : "crosshair"
-            }
+            getCursor={() => {
+              if (activeTool === TOOL_PAN || activeTool === TOOL_AI) return "grab";
+              if (activeTool === TOOL_SELECT) return "default";
+              return "crosshair";
+            }}
             useDevicePixels={getDevicePixelRatio()}
           />
         </div>

@@ -10,7 +10,7 @@ import {
 import OpenSeadragon from "openseadragon";
 import { buildTileUrl } from "../api/slides";
 import AnnotationOverlay from "../annotations/AnnotationOverlay";
-import { TOOL_AI, TOOL_PAN } from "../annotations/annotationTypes";
+import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel } from "./scaleBarUtils";
 
 function makeTileSource(slideName, metadata, options = {}) {
@@ -206,6 +206,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
       let cursor = "default";
 
       if (activeTool === TOOL_PAN) cursor = "grab";
+      if (activeTool === TOOL_SELECT) cursor = "default";
       if (activeTool === "measure") cursor = "crosshair";
       if (activeTool === "line") cursor = "crosshair";
       if (activeTool === "rect") cursor = "crosshair";
