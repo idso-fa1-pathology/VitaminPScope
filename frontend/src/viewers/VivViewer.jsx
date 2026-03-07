@@ -10,6 +10,8 @@ import {
 import DeckGL from "@deck.gl/react";
 import { OrthographicView } from "@deck.gl/core";
 import { loadOmeTiff, MultiscaleImageLayer } from "@hms-dbmi/viv";
+import AnnotationOverlay from "../annotations/AnnotationOverlay";
+import { TOOL_AI, TOOL_PAN } from "../annotations/annotationTypes";
 import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
 
 const API_BASE =
@@ -214,7 +216,19 @@ function getContainerSize(node) {
 }
 
 const VivViewer = forwardRef(function VivViewer(
-  { slide, slideInfo, selectedChannels, activeTool },
+  {
+    slide,
+    slideInfo,
+    selectedChannels,
+    activeTool = TOOL_PAN,
+    annotations = [],
+    onAddAnnotation,
+    onUpdateAnnotation,
+    onDeleteAnnotation,
+    selectedAnnotationId,
+    onSelectAnnotation,
+    annotationColor,
+  },
   ref
 ) {
   const containerRef = useRef(null);
@@ -314,6 +328,40 @@ const VivViewer = forwardRef(function VivViewer(
     });
   }, [slideInfo, viewState, containerSize.width]);
 
+  const imageToScreen = useCallback(
+    (point) => {
+      const width = containerSize.width || 1;
+      const height = containerSize.height || 1;
+      const zoom = viewState?.zoom ?? 0;
+      const scale = Math.pow(2, zoom);
+      const targetX = viewState?.target?.[0] ?? 0;
+      const targetY = viewState?.target?.[1] ?? 0;
+
+      return {
+        x: (point.x - targetX) * scale + width / 2,
+        y: (point.y - targetY) * scale + height / 2,
+      };
+    },
+    [containerSize.width, containerSize.height, viewState]
+  );
+
+  const screenToImage = useCallback(
+    (point) => {
+      const width = containerSize.width || 1;
+      const height = containerSize.height || 1;
+      const zoom = viewState?.zoom ?? 0;
+      const scale = Math.pow(2, zoom);
+      const targetX = viewState?.target?.[0] ?? 0;
+      const targetY = viewState?.target?.[1] ?? 0;
+
+      return {
+        x: (point.x - width / 2) / scale + targetX,
+        y: (point.y - height / 2) / scale + targetY,
+      };
+    },
+    [containerSize.width, containerSize.height, viewState]
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -405,17 +453,13 @@ const VivViewer = forwardRef(function VivViewer(
         const dtype = slideInfo.metadata?.dtype;
         const fastDefault = fallbackContrastLimits(dtype);
 
-        setContrastByChannel(
-          buildPerChannelContrastMap(normalizedChannels, fastDefault)
-        );
+        setContrastByChannel(buildPerChannelContrastMap(normalizedChannels, fastDefault));
 
         const contrastPromise = estimateContrastFromThumbnail(thumbnailUrl, dtype)
           .then((estimatedLimits) => {
             if (cancelled || startupSessionRef.current !== mySession) return;
 
-            setContrastByChannel(
-              buildPerChannelContrastMap(normalizedChannels, estimatedLimits)
-            );
+            setContrastByChannel(buildPerChannelContrastMap(normalizedChannels, estimatedLimits));
           })
           .catch(() => {})
           .finally(() => {
@@ -438,12 +482,7 @@ const VivViewer = forwardRef(function VivViewer(
         const imageWidth = slideInfo.metadata?.sizeX || 1;
         const imageHeight = slideInfo.metadata?.sizeY || 1;
 
-        const initial = getManualInitialViewState(
-          width,
-          height,
-          imageWidth,
-          imageHeight
-        );
+        const initial = getManualInitialViewState(width, height, imageWidth, imageHeight);
 
         setDeckInitialViewState(initial);
         setViewState(initial);
@@ -467,13 +506,7 @@ const VivViewer = forwardRef(function VivViewer(
     return () => {
       cancelled = true;
     };
-  }, [
-    slide?.name,
-    sourceUrl,
-    thumbnailUrl,
-    slideInfo,
-    normalizedChannels,
-  ]);
+  }, [slide?.name, sourceUrl, thumbnailUrl, slideInfo, normalizedChannels]);
 
   useEffect(() => {
     if (!showThumbnail) return;
@@ -573,7 +606,7 @@ const VivViewer = forwardRef(function VivViewer(
 
   const canMountDeck = Boolean(loader && deckInitialViewState && viewState);
   const controller =
-    activeTool === "pan"
+    activeTool === TOOL_PAN || activeTool === TOOL_AI
       ? DECK_CONTROLLER
       : {
           ...DECK_CONTROLLER,
@@ -710,11 +743,27 @@ const VivViewer = forwardRef(function VivViewer(
             }}
             onAfterRender={handleAfterRender}
             layers={layer ? [layer] : []}
-            getCursor={() => (activeTool === "pan" ? "grab" : "crosshair")}
+            getCursor={() =>
+              activeTool === TOOL_PAN || activeTool === TOOL_AI ? "grab" : "crosshair"
+            }
             useDevicePixels={getDevicePixelRatio()}
           />
         </div>
       )}
+
+      <AnnotationOverlay
+        activeTool={activeTool}
+        annotations={annotations}
+        onAddAnnotation={onAddAnnotation}
+        onUpdateAnnotation={onUpdateAnnotation}
+        onDeleteAnnotation={onDeleteAnnotation}
+        selectedAnnotationId={selectedAnnotationId}
+        onSelectAnnotation={onSelectAnnotation}
+        color={annotationColor}
+        imageToScreen={imageToScreen}
+        screenToImage={screenToImage}
+        metersPerPixel={getMetersPerPixel(slideInfo)}
+      />
 
       {vivScaleBar && (
         <div

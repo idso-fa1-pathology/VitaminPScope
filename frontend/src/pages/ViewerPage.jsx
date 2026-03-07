@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchSlides, fetchSlideMetadata } from "../api/slides";
+import {
+  DEFAULT_ANNOTATION_COLOR,
+  TOOL_AI,
+  TOOL_MEASURE,
+  TOOL_PAN,
+  TOOL_RECT,
+} from "../annotations/annotationTypes";
+import AnnotationToolbar from "../annotations/AnnotationToolbar";
 import ChannelPanel from "../components/ChannelPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
 import VivViewer from "../viewers/VivViewer";
@@ -165,7 +173,13 @@ function KvList({ rows }) {
   );
 }
 
-function ViewerInfoSection({ selectedSlide, slideInfo, isOme, selectedChannelsCount, detectedChannelCount }) {
+function ViewerInfoSection({
+  selectedSlide,
+  slideInfo,
+  isOme,
+  selectedChannelsCount,
+  detectedChannelCount,
+}) {
   const rows = [
     { label: "Slide name", value: formatValue(selectedSlide?.name) },
     { label: "Format", value: formatValue(slideInfo?.type) },
@@ -249,13 +263,13 @@ function ViewerToolsSection({ onResetView, onZoomIn, onZoomOut, onSetTool }) {
         <button className="viewer-tool-btn" onClick={onZoomOut} type="button">
           － Zoom out
         </button>
-        <button className="viewer-tool-btn" onClick={() => onSetTool("measure")} type="button">
+        <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_MEASURE)} type="button">
           📏 Measurement mode
         </button>
-        <button className="viewer-tool-btn" onClick={() => onSetTool("annotate")} type="button">
+        <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_RECT)} type="button">
           📝 Annotation mode
         </button>
-        <button className="viewer-tool-btn" onClick={() => onSetTool("ai")} type="button">
+        <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_AI)} type="button">
           🤖 AI overlay
         </button>
       </div>
@@ -304,7 +318,10 @@ function ViewerPage() {
   const [slideInfo, setSlideInfo] = useState(null);
   const [channelSettings, setChannelSettings] = useState({});
   const [enabledChannelIndexes, setEnabledChannelIndexes] = useState([]);
-  const [activeTool, setActiveTool] = useState("pan");
+  const [activeTool, setActiveTool] = useState(TOOL_PAN);
+  const [annotationsBySlide, setAnnotationsBySlide] = useState({});
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
+  const [annotationColor, setAnnotationColor] = useState(DEFAULT_ANNOTATION_COLOR);
 
   const decodedSlidePath = decodeURIComponent(slideName || "");
 
@@ -380,6 +397,21 @@ function ViewerPage() {
       .sort((a, b) => a.index - b.index);
   }, [enabledChannelIndexes, channelSettings]);
 
+  const slideAnnotationKey = selectedSlide?.path || selectedSlide?.name || "";
+  const annotations = annotationsBySlide[slideAnnotationKey] || [];
+  const selectedAnnotation =
+    annotations.find((annotation) => annotation.id === selectedAnnotationId) || null;
+
+  useEffect(() => {
+    setSelectedAnnotationId(null);
+  }, [slideAnnotationKey]);
+
+  useEffect(() => {
+    if (selectedAnnotation?.color) {
+      setAnnotationColor(selectedAnnotation.color);
+    }
+  }, [selectedAnnotation?.color]);
+
   const toggleChannel = (index) => {
     setEnabledChannelIndexes((prev) => {
       if (prev.includes(index)) {
@@ -423,6 +455,50 @@ function ViewerPage() {
 
   const handleResetView = () => {
     viewerControlsRef.current?.resetView?.();
+  };
+
+  const handleAddAnnotation = (annotation) => {
+    if (!slideAnnotationKey) return;
+
+    setAnnotationsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: [...(prev[slideAnnotationKey] || []), annotation],
+    }));
+  };
+
+  const handleUpdateAnnotation = (annotationId, patch) => {
+    if (!slideAnnotationKey) return;
+
+    setAnnotationsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: (prev[slideAnnotationKey] || []).map((annotation) =>
+        annotation.id === annotationId ? { ...annotation, ...patch } : annotation
+      ),
+    }));
+  };
+
+  const handleDeleteAnnotation = (annotationId) => {
+    if (!slideAnnotationKey) return;
+
+    setAnnotationsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: (prev[slideAnnotationKey] || []).filter(
+        (annotation) => annotation.id !== annotationId
+      ),
+    }));
+
+    setSelectedAnnotationId((prev) => (prev === annotationId ? null : prev));
+  };
+
+  const handleClearAnnotations = () => {
+    if (!slideAnnotationKey) return;
+
+    setAnnotationsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: [],
+    }));
+
+    setSelectedAnnotationId(null);
   };
 
   const handleSlideChange = (event) => {
@@ -562,37 +638,25 @@ function ViewerPage() {
             </div>
 
             <div className="viewer-stage__toolbar-center">
-              <button
-                className={`viewer-stage-btn ${activeTool === "pan" ? "active" : ""}`}
-                onClick={() => setActiveTool("pan")}
-                type="button"
-              >
-                ✋ Pan
-              </button>
-
-              <button
-                className={`viewer-stage-btn ${activeTool === "measure" ? "active" : ""}`}
-                onClick={() => setActiveTool("measure")}
-                type="button"
-              >
-                📏 Measure
-              </button>
-
-              <button
-                className={`viewer-stage-btn ${activeTool === "annotate" ? "active" : ""}`}
-                onClick={() => setActiveTool("annotate")}
-                type="button"
-              >
-                📝 Annotate
-              </button>
-
-              <button
-                className={`viewer-stage-btn ${activeTool === "ai" ? "active" : ""}`}
-                onClick={() => setActiveTool("ai")}
-                type="button"
-              >
-                🤖 AI
-              </button>
+              <AnnotationToolbar
+                activeTool={activeTool}
+                onToolChange={setActiveTool}
+                onClear={handleClearAnnotations}
+                color={annotationColor}
+                onColorChange={(nextColor) => {
+                  setAnnotationColor(nextColor);
+                
+                  if (selectedAnnotationId) {
+                    handleUpdateAnnotation(selectedAnnotationId, { color: nextColor });
+                  }
+                }}
+                selectedAnnotation={selectedAnnotation}
+                onDeleteSelected={() => {
+                  if (selectedAnnotationId) {
+                    handleDeleteAnnotation(selectedAnnotationId);
+                  }
+                }}
+              />
             </div>
 
             <div className="viewer-stage__toolbar-right">
@@ -609,6 +673,9 @@ function ViewerPage() {
                 {selectedChannels.length} active channel
                 {selectedChannels.length === 1 ? "" : "s"}
               </span>
+              <span className="viewer-badge">
+                {annotations.length} annotation{annotations.length === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
 
@@ -623,6 +690,13 @@ function ViewerPage() {
                   slideInfo={slideInfo}
                   selectedChannels={selectedChannels}
                   activeTool={activeTool}
+                  annotations={annotations}
+                  onAddAnnotation={handleAddAnnotation}
+                  onUpdateAnnotation={handleUpdateAnnotation}
+                  onDeleteAnnotation={handleDeleteAnnotation}
+                  selectedAnnotationId={selectedAnnotationId}
+                  onSelectAnnotation={setSelectedAnnotationId}
+                  annotationColor={annotationColor}
                 />
               ) : (
                 <OpenSeadragonViewer
@@ -631,6 +705,13 @@ function ViewerPage() {
                   slideInfo={slideInfo}
                   selectedChannels={selectedChannels}
                   activeTool={activeTool}
+                  annotations={annotations}
+                  onAddAnnotation={handleAddAnnotation}
+                  onUpdateAnnotation={handleUpdateAnnotation}
+                  onDeleteAnnotation={handleDeleteAnnotation}
+                  selectedAnnotationId={selectedAnnotationId}
+                  onSelectAnnotation={setSelectedAnnotationId}
+                  annotationColor={annotationColor}
                 />
               )}
             </div>

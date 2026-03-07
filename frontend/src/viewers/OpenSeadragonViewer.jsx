@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -8,6 +9,8 @@ import {
 } from "react";
 import OpenSeadragon from "openseadragon";
 import { buildTileUrl } from "../api/slides";
+import AnnotationOverlay from "../annotations/AnnotationOverlay";
+import { TOOL_AI, TOOL_PAN } from "../annotations/annotationTypes";
 import { getMetersPerPixel } from "./scaleBarUtils";
 
 function makeTileSource(slideName, metadata, options = {}) {
@@ -53,7 +56,19 @@ function formatMetricLength(meters) {
 }
 
 const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
-  { slide, slideInfo, selectedChannels, activeTool = "pan" },
+  {
+    slide,
+    slideInfo,
+    selectedChannels,
+    activeTool = TOOL_PAN,
+    annotations = [],
+    onAddAnnotation,
+    onUpdateAnnotation,
+    onDeleteAnnotation,
+    selectedAnnotationId,
+    onSelectAnnotation,
+    annotationColor,
+  },
   ref
 ) {
   const containerRef = useRef(null);
@@ -184,20 +199,44 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
   useEffect(() => {
     if (!viewerRef.current) return;
 
-    const isPanMode = activeTool === "pan";
+    const isPanMode = activeTool === TOOL_PAN || activeTool === TOOL_AI;
     viewerRef.current.setMouseNavEnabled(isPanMode);
 
     if (containerRef.current) {
       let cursor = "default";
 
-      if (activeTool === "pan") cursor = "grab";
+      if (activeTool === TOOL_PAN) cursor = "grab";
       if (activeTool === "measure") cursor = "crosshair";
-      if (activeTool === "annotate") cursor = "crosshair";
-      if (activeTool === "ai") cursor = "cell";
+      if (activeTool === "line") cursor = "crosshair";
+      if (activeTool === "rect") cursor = "crosshair";
+      if (activeTool === "point") cursor = "crosshair";
+      if (activeTool === TOOL_AI) cursor = "cell";
 
       containerRef.current.style.cursor = cursor;
     }
   }, [activeTool]);
+
+  const imageToScreen = useCallback((point) => {
+    const viewer = viewerRef.current;
+    if (!viewer?.viewport) return { x: 0, y: 0 };
+
+    const p = viewer.viewport.imageToViewerElementCoordinates(
+      new OpenSeadragon.Point(point.x, point.y)
+    );
+
+    return { x: p.x, y: p.y };
+  }, []);
+
+  const screenToImage = useCallback((point) => {
+    const viewer = viewerRef.current;
+    if (!viewer?.viewport) return null;
+
+    const p = viewer.viewport.viewerElementToImageCoordinates(
+      new OpenSeadragon.Point(point.x, point.y)
+    );
+
+    return { x: p.x, y: p.y };
+  }, []);
 
   const scaleBar = useMemo(() => {
     const metersPerPixel = getMetersPerPixel(slideInfo);
@@ -230,6 +269,20 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         overflow: "hidden",
       }}
     >
+      <AnnotationOverlay
+        activeTool={activeTool}
+        annotations={annotations}
+        onAddAnnotation={onAddAnnotation}
+        onUpdateAnnotation={onUpdateAnnotation}
+        onDeleteAnnotation={onDeleteAnnotation}
+        selectedAnnotationId={selectedAnnotationId}
+        onSelectAnnotation={onSelectAnnotation}
+        color={annotationColor}
+        imageToScreen={imageToScreen}
+        screenToImage={screenToImage}
+        metersPerPixel={getMetersPerPixel(slideInfo)}
+      />
+
       {scaleBar && (
         <div
           style={{
