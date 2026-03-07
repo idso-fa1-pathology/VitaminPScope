@@ -312,14 +312,16 @@ function AnnotationShape({
 
         {(annotation.tool === TOOL_MEASURE || selected) && (
           <text
-            x={midX + 8}
-            y={midY - 8}
-            fill="#fff"
-            fontSize="12"
-            fontWeight="600"
-            paintOrder="stroke"
-            stroke="#000"
-            strokeWidth="3"
+          x={midX + 8}
+          y={midY - 8}
+          fill="#fff"
+          fontSize="12"
+          fontWeight="600"
+          paintOrder="stroke"
+          stroke="#000"
+          strokeWidth="3"
+          pointerEvents="none"
+          style={{ userSelect: "none" }}
           >
             {formatLengthFromPixels(pixelLength, metersPerPixel)}
           </text>
@@ -507,9 +509,10 @@ function AnnotationOverlay({
   };
 
   const handlePointerDown = (event) => {
+    event.preventDefault();
     if (!svgRef.current) return;
     if (!interactiveOverlayEnabled) return;
-
+    event.preventDefault();
     const screenPoint = getRelativePoint(event, svgRef.current);
     const imagePoint = screenToImage(screenPoint);
     if (!imagePoint) return;
@@ -803,6 +806,9 @@ function AnnotationOverlay({
         height: "100%",
         pointerEvents: interactiveOverlayEnabled ? "auto" : "none",
         touchAction: interactiveOverlayEnabled ? "none" : "auto",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        outline: "none",
       }}
     >
       {annotations.map((annotation) => (
