@@ -31,13 +31,13 @@ function SlideManagerPage() {
   const loadSlides = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await fetchSlides();
-
       setSlides(data.slides || []);
       setFolders(data.folders || []);
     } catch (err) {
       console.error("Error fetching slides:", err);
-      setError("Failed to load file manager data.");
+      setError("Failed to load items.");
     } finally {
       setLoading(false);
     }
@@ -48,6 +48,7 @@ function SlideManagerPage() {
   }, []);
 
   const handleOpenSlide = (slide) => {
+    if (slide.kind === "folder") return;
     navigate(`/viewer/${encodeURIComponent(slide.name)}`);
   };
 
@@ -75,7 +76,10 @@ function SlideManagerPage() {
     if (!selectedItem || !renameValue.trim()) return;
 
     try {
-      await renameItem(selectedItem.path || selectedItem.name, renameValue.trim());
+      await renameItem(
+        selectedItem.path || selectedItem.name,
+        renameValue.trim()
+      );
       setRenameOpen(false);
       setSelectedItem(null);
       setRenameValue("");
@@ -121,16 +125,18 @@ function SlideManagerPage() {
 
   const counts = useMemo(() => {
     const totalSlides = slides.length;
+    const totalFolders = folders.length;
     const ome = slides.filter((s) => s.type === "ome-tiff").length;
     const svs = slides.filter((s) => s.type === "svs").length;
-    const totalFolders = folders.length;
 
     return { totalSlides, totalFolders, ome, svs };
   }, [slides, folders]);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
 
       const matchesType =
         typeFilter === "all"
@@ -146,152 +152,106 @@ function SlideManagerPage() {
   return (
     <div className="slide-manager-page">
       <div className="slide-manager-shell">
-        <section className="slide-manager-hero">
-          <div className="slide-manager-hero__left">
-            <div className="slide-manager-badge">VitaminPScope workspace</div>
-            <h1 className="slide-manager-title">VitaminPScope File Manager</h1>
-            <p className="slide-manager-subtitle">
-              Organize digital pathology files, manage folders, and launch a
-              dedicated slide viewer from a cleaner and more professional workspace.
-            </p>
+      <section className="manager-topbar">
+        <div>
+          <h1 className="app-title">VitaminPScope</h1>
+          <div className="manager-eyebrow">File Manager</div>
+        </div>
+
+        <div className="toolbar-actions">
+          <button
+            className="primary-btn"
+            onClick={() => setCreateFolderOpen(true)}
+          >
+            New Folder
+          </button>
+          <button className="secondary-btn" onClick={loadSlides}>
+            Refresh
+          </button>
+        </div>
+      </section>
+
+        <section className="slide-manager-stats slide-manager-stats--compact">
+          <div className="stat-tile">
+            <div className="stat-tile__label">Items</div>
+            <div className="stat-tile__value">{items.length}</div>
           </div>
 
-          <div className="slide-manager-hero__right">
-            <div className="hero-panel">
-              <div className="hero-panel__label">Available items</div>
-              <div className="hero-panel__value">{items.length}</div>
-              <div className="hero-panel__hint">
-                Files and folders available in your current workspace.
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="slide-manager-stats">
           <div className="stat-tile">
             <div className="stat-tile__label">Folders</div>
             <div className="stat-tile__value">{counts.totalFolders}</div>
-            <div className="stat-tile__meta">Organized containers</div>
-          </div>
-
-          <div className="stat-tile">
-            <div className="stat-tile__label">Slides</div>
-            <div className="stat-tile__value">{counts.totalSlides}</div>
-            <div className="stat-tile__meta">Available pathology files</div>
           </div>
 
           <div className="stat-tile">
             <div className="stat-tile__label">OME-TIFF</div>
             <div className="stat-tile__value">{counts.ome}</div>
-            <div className="stat-tile__meta">Multichannel slides</div>
           </div>
 
           <div className="stat-tile">
             <div className="stat-tile__label">SVS</div>
             <div className="stat-tile__value">{counts.svs}</div>
-            <div className="stat-tile__meta">Whole-slide pathology</div>
           </div>
         </section>
 
-        <section className="slide-manager-toolbar">
-          <div className="toolbar-card">
-            <div className="manager-header-row">
-              <div className="search-box">
-                <span className="search-box__icon">🔎</span>
-                <input
-                  type="text"
-                  placeholder="Search folders or slides..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="toolbar-actions">
-                <button
-                  className="primary-btn"
-                  onClick={() => setCreateFolderOpen(true)}
-                >
-                  + New Folder
-                </button>
-
-                <button className="secondary-btn" onClick={loadSlides}>
-                  Refresh
-                </button>
-              </div>
+        <section className="toolbar-card">
+          <div className="manager-header-row">
+            <div className="search-box">
+              <span className="search-box__icon">🔎</span>
+              <input
+                type="text"
+                placeholder="Search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
 
-            <div className="toolbar-row">
-              <div className="filter-pill-group">
-                <button
-                  className={`filter-pill ${typeFilter === "all" ? "active" : ""}`}
-                  onClick={() => setTypeFilter("all")}
-                >
-                  All
-                </button>
-                <button
-                  className={`filter-pill ${typeFilter === "folder" ? "active" : ""}`}
-                  onClick={() => setTypeFilter("folder")}
-                >
-                  Folders
-                </button>
-                <button
-                  className={`filter-pill ${typeFilter === "svs" ? "active" : ""}`}
-                  onClick={() => setTypeFilter("svs")}
-                >
-                  SVS
-                </button>
-                <button
-                  className={`filter-pill ${typeFilter === "ome-tiff" ? "active" : ""}`}
-                  onClick={() => setTypeFilter("ome-tiff")}
-                >
-                  OME-TIFF
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="upload-card">
-            <div>
-              <h3 className="upload-card__title">Workspace actions</h3>
-              <p className="upload-card__text">
-                Create folders, rename assets, and remove files from a cleaner
-                management interface.
-              </p>
-            </div>
-
-            <div className="upload-dropzone">
-              <div className="upload-dropzone__label">Professional workflow</div>
-              <div className="upload-dropzone__hint">
-                Next step can be drag-and-drop uploads, move-to-folder support,
-                and breadcrumbs for nested folder navigation.
-              </div>
+            <div className="filter-pill-group">
+              <button
+                className={`filter-pill ${typeFilter === "all" ? "active" : ""}`}
+                onClick={() => setTypeFilter("all")}
+              >
+                All
+              </button>
+              <button
+                className={`filter-pill ${
+                  typeFilter === "folder" ? "active" : ""
+                }`}
+                onClick={() => setTypeFilter("folder")}
+              >
+                Folders
+              </button>
+              <button
+                className={`filter-pill ${typeFilter === "svs" ? "active" : ""}`}
+                onClick={() => setTypeFilter("svs")}
+              >
+                SVS
+              </button>
+              <button
+                className={`filter-pill ${
+                  typeFilter === "ome-tiff" ? "active" : ""
+                }`}
+                onClick={() => setTypeFilter("ome-tiff")}
+              >
+                OME-TIFF
+              </button>
             </div>
           </div>
         </section>
 
         <section className="content-card">
           <div className="content-card__top">
-            <div>
-              <h2 className="content-card__title">Workspace items</h2>
-              <p className="content-card__subtitle">
-                Open slides in the viewer, or manage folders and file names.
-              </p>
-            </div>
-
+            <h2 className="content-card__title">Items</h2>
             <div className="content-card__subtitle">
-              {loading ? "Loading..." : `Showing ${filteredItems.length} items`}
+              {loading ? "Loading..." : `${filteredItems.length} shown`}
             </div>
           </div>
 
           {error ? (
-            <div className="empty-state" style={{ marginBottom: "16px" }}>
-              <h3 className="empty-state__title">Action failed</h3>
+            <div className="empty-state" style={{ marginBottom: 16 }}>
+              <h3 className="empty-state__title">Something went wrong</h3>
               <p className="empty-state__text">{error}</p>
-              <div style={{ marginTop: "14px" }}>
-                <button
-                  className="secondary-btn"
-                  onClick={() => setError("")}
-                >
+              <div style={{ marginTop: 14 }}>
+                <button className="secondary-btn" onClick={() => setError("")}>
                   Dismiss
                 </button>
               </div>
@@ -300,9 +260,9 @@ function SlideManagerPage() {
 
           {filteredItems.length === 0 ? (
             <div className="empty-state">
-              <h3 className="empty-state__title">No matching items</h3>
+              <h3 className="empty-state__title">No items found</h3>
               <p className="empty-state__text">
-                Try another search term, create a folder, or change the filter.
+                Try a different search or filter.
               </p>
             </div>
           ) : (
@@ -323,7 +283,7 @@ function SlideManagerPage() {
 
       <Modal
         open={createFolderOpen}
-        title="Create new folder"
+        title="New Folder"
         onClose={() => setCreateFolderOpen(false)}
         footer={
           <>
@@ -334,55 +294,61 @@ function SlideManagerPage() {
               Cancel
             </button>
             <button className="primary-btn" onClick={handleCreateFolder}>
-              Create folder
+              Create
             </button>
           </>
         }
       >
         <div className="form-field">
-          <label className="form-label">Folder name</label>
+          <label className="form-label">Name</label>
           <input
             className="form-input"
             value={folderName}
             onChange={(e) => setFolderName(e.target.value)}
-            placeholder="Enter folder name"
+            placeholder="Folder name"
           />
         </div>
       </Modal>
 
       <Modal
         open={renameOpen}
-        title="Rename item"
+        title="Rename"
         onClose={() => setRenameOpen(false)}
         footer={
           <>
-            <button className="secondary-btn" onClick={() => setRenameOpen(false)}>
+            <button
+              className="secondary-btn"
+              onClick={() => setRenameOpen(false)}
+            >
               Cancel
             </button>
             <button className="primary-btn" onClick={handleRename}>
-              Save changes
+              Save
             </button>
           </>
         }
       >
         <div className="form-field">
-          <label className="form-label">New name</label>
+          <label className="form-label">Name</label>
           <input
             className="form-input"
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            placeholder="Enter new item name"
+            placeholder="New name"
           />
         </div>
       </Modal>
 
       <Modal
         open={deleteOpen}
-        title="Delete item"
+        title="Delete"
         onClose={() => setDeleteOpen(false)}
         footer={
           <>
-            <button className="secondary-btn" onClick={() => setDeleteOpen(false)}>
+            <button
+              className="secondary-btn"
+              onClick={() => setDeleteOpen(false)}
+            >
               Cancel
             </button>
             <button className="danger-btn" onClick={handleDelete}>
@@ -392,9 +358,8 @@ function SlideManagerPage() {
         }
       >
         <p className="modal-help-text">
-          Are you sure you want to delete{" "}
-          <strong>{selectedItem?.name || "this item"}</strong>? This action cannot
-          be undone.
+          Delete <strong>{selectedItem?.name || "this item"}</strong>? This
+          cannot be undone.
         </p>
       </Modal>
     </div>
