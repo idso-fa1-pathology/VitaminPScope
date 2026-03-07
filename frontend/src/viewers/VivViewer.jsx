@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import DeckGL from "@deck.gl/react";
 import { OrthographicView } from "@deck.gl/core";
 import { loadOmeTiff, MultiscaleImageLayer } from "@hms-dbmi/viv";
@@ -146,7 +154,10 @@ function getContainerSize(node) {
   };
 }
 
-function VivViewer({ slide, slideInfo, selectedChannels }) {
+const VivViewer = forwardRef(function VivViewer(
+  { slide, slideInfo, selectedChannels, activeTool },
+  ref
+) {
   const containerRef = useRef(null);
   const currentSlideRef = useRef(null);
   const hideThumbRafRef = useRef(null);
@@ -157,6 +168,7 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
 
   const [loader, setLoader] = useState(null);
   const [deckInitialViewState, setDeckInitialViewState] = useState(null);
+  const [viewState, setViewState] = useState(null);
   const [contrastByChannel, setContrastByChannel] = useState({});
   const [loading, setLoading] = useState(false);
   const [showThumbnail, setShowThumbnail] = useState(true);
@@ -227,6 +239,30 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
     ].join("||");
   }, [slide?.name, loader, selectedChannelsSignature, contrastSignature]);
 
+  useImperativeHandle(ref, () => ({
+    zoomIn() {
+      setViewState((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          zoom: Math.min((prev.maxZoom ?? prev.zoom + 8), prev.zoom + 0.5),
+        };
+      });
+    },
+    zoomOut() {
+      setViewState((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          zoom: Math.max((prev.minZoom ?? prev.zoom - 4), prev.zoom - 0.5),
+        };
+      });
+    },
+    resetView() {
+      setViewState(deckInitialViewState || null);
+    },
+  }), [deckInitialViewState]);
+
   useEffect(() => {
     return () => {
       if (hideThumbRafRef.current) {
@@ -258,6 +294,7 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
       setShowThumbnail(true);
       setLoader(null);
       setDeckInitialViewState(null);
+      setViewState(null);
       setContrastByChannel({});
       setError("");
     }
@@ -270,8 +307,6 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
         const dtype = slideInfo.metadata?.dtype;
         const fastDefault = fallbackContrastLimits(dtype);
 
-        // Seed immediately so Viv can mount with deterministic limits as soon
-        // as the loader is ready, even if thumbnail analysis resolves later.
         setContrastByChannel(
           buildPerChannelContrastMap(slideInfo.channels, fastDefault)
         );
@@ -283,9 +318,7 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
               buildPerChannelContrastMap(slideInfo.channels, estimatedLimits)
             );
           })
-          .catch(() => {
-            // Keep fallback contrast if thumbnail analysis fails.
-          })
+          .catch(() => {})
           .finally(() => {
             if (cancelled || startupSessionRef.current !== mySession) return;
             contrastReadyRef.current = true;
@@ -306,9 +339,9 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
         const imageWidth = slideInfo.metadata?.sizeX || 1;
         const imageHeight = slideInfo.metadata?.sizeY || 1;
 
-        setDeckInitialViewState(
-          getManualInitialViewState(width, height, imageWidth, imageHeight)
-        );
+        const initial = getManualInitialViewState(width, height, imageWidth, imageHeight);
+        setDeckInitialViewState(initial);
+        setViewState(initial);
 
         await contrastPromise;
 
@@ -396,8 +429,6 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
 
     stableRenderCountRef.current += 1;
 
-    // Require several consecutive stable rendered frames after the layer reports
-    // loaded. This prevents handing off to a transient gray/blank first frame.
     if (stableRenderCountRef.current < 3) return;
 
     vivStableRef.current = true;
@@ -437,7 +468,17 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
     );
   }
 
-  const canMountDeck = Boolean(loader && deckInitialViewState);
+  const canMountDeck = Boolean(loader && deckInitialViewState && viewState);
+  const controller =
+    activeTool === "pan"
+      ? DECK_CONTROLLER
+      : {
+          ...DECK_CONTROLLER,
+          dragPan: false,
+          scrollZoom: true,
+          doubleClickZoom: true,
+          touchZoom: true,
+        };
 
   return (
     <div
@@ -540,11 +581,15 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
           <DeckGL
             key={slide.name}
             views={ORTHO_VIEW}
-            controller={DECK_CONTROLLER}
+            controller={controller}
             initialViewState={deckInitialViewState}
+            viewState={viewState}
+            onViewStateChange={({ viewState: nextViewState }) => {
+              setViewState(nextViewState);
+            }}
             onAfterRender={handleAfterRender}
             layers={layer ? [layer] : []}
-            getCursor={() => "grab"}
+            getCursor={() => (activeTool === "pan" ? "grab" : "crosshair")}
             useDevicePixels={getDevicePixelRatio()}
           />
         </div>
@@ -569,6 +614,6 @@ function VivViewer({ slide, slideInfo, selectedChannels }) {
       )}
     </div>
   );
-}
+});
 
 export default VivViewer;

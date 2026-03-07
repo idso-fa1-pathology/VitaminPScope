@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchSlides, fetchSlideMetadata } from "../api/slides";
 import ChannelPanel from "../components/ChannelPanel";
@@ -98,13 +98,54 @@ function ViewerStatusSection({ slideInfo, isOme, selectedChannelsCount }) {
   );
 }
 
+function ViewerMetadataSection({ slideInfo }) {
+  const metadata = slideInfo?.metadata || {};
+
+  const rows = [
+    { label: "Width", value: metadata.sizeX },
+    { label: "Height", value: metadata.sizeY },
+    { label: "Levels", value: metadata.levels },
+    { label: "Tile width", value: metadata.tileWidth },
+    { label: "Tile height", value: metadata.tileHeight },
+    { label: "Data type", value: metadata.dtype },
+    { label: "Band count", value: metadata.bandCount },
+    { label: "Magnification", value: metadata.magnification },
+    { label: "mm_x", value: metadata.mm_x },
+    { label: "mm_y", value: metadata.mm_y },
+  ].filter((row) => row.value !== undefined && row.value !== null);
+
+  if (!rows.length) return null;
+
+  return (
+    <div className="viewer-sidebar__section">
+      <div className="viewer-sidebar__section-header">
+        <h3 className="viewer-sidebar__section-title">Image metadata</h3>
+        <p className="viewer-sidebar__section-subtitle">
+          Technical properties reported by the slide file
+        </p>
+      </div>
+
+      <div className="viewer-sidebar__section-body">
+        <div className="viewer-kv-list">
+          {rows.map((row) => (
+            <div className="viewer-kv-row" key={row.label}>
+              <div className="viewer-kv-key">{row.label}</div>
+              <div className="viewer-kv-value">{String(row.value)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ViewerToolsSection() {
   return (
     <div className="viewer-sidebar__section">
       <div className="viewer-sidebar__section-header">
         <h3 className="viewer-sidebar__section-title">Quick tools</h3>
         <p className="viewer-sidebar__section-subtitle">
-          UI placeholders for a richer review workflow
+          Viewer workspace shortcuts and future tools
         </p>
       </div>
 
@@ -123,16 +164,21 @@ function ViewerToolsSection() {
 function ViewerPage() {
   const navigate = useNavigate();
   const { slideName } = useParams();
+  const viewerControlsRef = useRef(null);
 
+  const [slides, setSlides] = useState([]);
   const [selectedSlide, setSelectedSlide] = useState(null);
   const [slideInfo, setSlideInfo] = useState(null);
   const [channelSettings, setChannelSettings] = useState({});
   const [enabledChannelIndexes, setEnabledChannelIndexes] = useState([]);
+  const [activeTool, setActiveTool] = useState("pan");
 
   useEffect(() => {
     fetchSlides()
       .then((data) => {
         const allSlides = data.slides || [];
+        setSlides(allSlides);
+
         const decodedSlideName = decodeURIComponent(slideName || "");
         const foundSlide = allSlides.find((slide) => slide.name === decodedSlideName);
         setSelectedSlide(foundSlide || null);
@@ -210,6 +256,24 @@ function ViewerPage() {
     }));
   };
 
+  const handleZoomIn = () => {
+    viewerControlsRef.current?.zoomIn?.();
+  };
+
+  const handleZoomOut = () => {
+    viewerControlsRef.current?.zoomOut?.();
+  };
+
+  const handleResetView = () => {
+    viewerControlsRef.current?.resetView?.();
+  };
+
+  const handleSlideChange = (event) => {
+    const nextSlideName = event.target.value;
+    if (!nextSlideName || nextSlideName === selectedSlide?.name) return;
+    navigate(`/viewer/${encodeURIComponent(nextSlideName)}`);
+  };
+
   const isOme = slideInfo?.type === "ome-tiff";
 
   if (!selectedSlide) {
@@ -254,6 +318,21 @@ function ViewerPage() {
         </div>
 
         <div className="viewer-topbar__right">
+          <div className="viewer-slide-switcher">
+            <label className="viewer-slide-switcher__label">Switch slide</label>
+            <select
+              className="viewer-slide-switcher__select"
+              value={selectedSlide.name}
+              onChange={handleSlideChange}
+            >
+              {slides.map((slide) => (
+                <option key={slide.name} value={slide.name}>
+                  {slide.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button className="viewer-btn-secondary">Export snapshot</button>
           <button className="viewer-btn">Open analysis</button>
         </div>
@@ -273,6 +352,8 @@ function ViewerPage() {
             isOme={isOme}
             selectedChannelsCount={selectedChannels.length}
           />
+
+          <ViewerMetadataSection slideInfo={slideInfo} />
 
           {isOme && slideInfo?.channels?.length ? (
             <div className="viewer-sidebar__section">
@@ -307,7 +388,43 @@ function ViewerPage() {
               </span>
             </div>
 
+            <div className="viewer-stage__toolbar-center">
+              <button
+                className={`viewer-stage-btn ${activeTool === "pan" ? "active" : ""}`}
+                onClick={() => setActiveTool("pan")}
+              >
+                ✋ Pan
+              </button>
+              <button
+                className={`viewer-stage-btn ${activeTool === "measure" ? "active" : ""}`}
+                onClick={() => setActiveTool("measure")}
+              >
+                📏 Measure
+              </button>
+              <button
+                className={`viewer-stage-btn ${activeTool === "annotate" ? "active" : ""}`}
+                onClick={() => setActiveTool("annotate")}
+              >
+                📝 Annotate
+              </button>
+              <button
+                className={`viewer-stage-btn ${activeTool === "ai" ? "active" : ""}`}
+                onClick={() => setActiveTool("ai")}
+              >
+                🤖 AI
+              </button>
+            </div>
+
             <div className="viewer-stage__toolbar-right">
+              <button className="viewer-stage-icon-btn" onClick={handleZoomIn}>
+                ＋
+              </button>
+              <button className="viewer-stage-icon-btn" onClick={handleZoomOut}>
+                －
+              </button>
+              <button className="viewer-stage-icon-btn" onClick={handleResetView}>
+                ⌂
+              </button>
               <span className="viewer-badge">
                 {selectedChannels.length} active channel{selectedChannels.length === 1 ? "" : "s"}
               </span>
@@ -320,15 +437,19 @@ function ViewerPage() {
                 <div className="viewer-empty-state">Loading slide workspace...</div>
               ) : isOme ? (
                 <VivViewer
+                  ref={viewerControlsRef}
                   slide={selectedSlide}
                   slideInfo={slideInfo}
                   selectedChannels={selectedChannels}
+                  activeTool={activeTool}
                 />
               ) : (
                 <OpenSeadragonViewer
+                  ref={viewerControlsRef}
                   slide={selectedSlide}
                   slideInfo={slideInfo}
                   selectedChannels={selectedChannels}
+                  activeTool={activeTool}
                 />
               )}
             </div>
