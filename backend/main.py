@@ -1,6 +1,8 @@
 import os
 import base64
+from functools import lru_cache
 from urllib.parse import quote
+
 import large_image
 from fastapi import FastAPI, Response, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +15,10 @@ app = FastAPI(title="VitaminPScope API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Accept-Ranges", "Content-Length", "Content-Range", "ETag", "Last-Modified"],
 )
 
 DATA_DIR = "/data/sample_slides"
@@ -23,6 +26,24 @@ DATA_DIR = "/data/sample_slides"
 EMPTY_TILE = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
 )
+
+IMAGE_EXTENSIONS = (
+    ".svs",
+    ".ndpi",
+    ".tif",
+    ".tiff",
+    ".ome.tif",
+    ".ome.tiff",
+)
+
+CACHE_HEADERS = {
+    "Cache-Control": "public, max-age=3600, immutable",
+}
+
+SOURCE_HEADERS = {
+    "Cache-Control": "public, max-age=3600",
+    "Accept-Ranges": "bytes",
+}
 
 
 def detect_slide_type(filename: str) -> str:
@@ -39,21 +60,33 @@ def detect_slide_type(filename: str) -> str:
 
 
 def get_slide_path(filename: str) -> str:
-    filepath = os.path.join(DATA_DIR, filename)
-    if not os.path.exists(filepath):
+    safe_name = os.path.basename(filename)
+    filepath = os.path.join(DATA_DIR, safe_name)
+    if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="Slide not found")
     return filepath
 
 
+@lru_cache(maxsize=32)
+def get_cached_tilesource(filepath: str):
+    return large_image.getTileSource(filepath)
+
+
+@lru_cache(maxsize=64)
+def get_cached_slide_metadata(filepath: str):
+    ts = get_cached_tilesource(filepath)
+    return ts.getMetadata()
+
+
 def get_slide_type_and_metadata(filename: str):
     filepath = get_slide_path(filename)
-
     try:
-        ts = large_image.getTileSource(filepath)
-        metadata = ts.getMetadata()
+        metadata = get_cached_slide_metadata(filepath)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not open slide: {str(e)}")
-
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not open slide: {str(e)}",
+        )
     return detect_slide_type(filename), metadata
 
 
@@ -61,7 +94,10 @@ def extract_channels(metadata: dict) -> list:
     channels = []
 
     if "channels" in metadata and isinstance(metadata["channels"], list):
-        channels = [{"index": i, "name": ch} for i, ch in enumerate(metadata["channels"])]
+        channels = [
+            {"index": i, "name": ch if ch is not None else f"Channel {i}"}
+            for i, ch in enumerate(metadata["channels"])
+        ]
     elif "frames" in metadata and isinstance(metadata["frames"], list):
         seen = set()
         for frame in metadata["frames"]:
@@ -73,7 +109,10 @@ def extract_channels(metadata: dict) -> list:
     else:
         band_count = metadata.get("bandCount")
         if band_count:
-            channels = [{"index": i, "name": f"Channel {i}"} for i in range(band_count)]
+            channels = [
+                {"index": i, "name": f"Channel {i}"}
+                for i in range(int(band_count))
+            ]
 
     return channels
 
@@ -84,6 +123,21 @@ def unpack_image_result(result, default_mime="image/jpeg"):
         mime_type = result[1] if len(result) > 1 else default_mime
         return image_binary, mime_type
     return result, default_mime
+
+
+def normalize_max_size(max_size: int) -> int:
+    if max_size < 64:
+        return 64
+    if max_size > 4096:
+        return 4096
+    return max_size
+
+
+def get_media_type_for_source(filename: str) -> str:
+    slide_type = detect_slide_type(filename)
+    if slide_type in ("ome-tiff", "tiff"):
+        return "image/tiff"
+    return "application/octet-stream"
 
 
 @app.get("/")
@@ -99,20 +153,14 @@ def list_slides():
 
     files = [
         f for f in os.listdir(DATA_DIR)
-        if f.lower().endswith(
-            (
-                ".svs",
-                ".ndpi",
-                ".tif",
-                ".tiff",
-                ".ome.tif",
-                ".ome.tiff",
-            )
-        )
+        if f.lower().endswith(IMAGE_EXTENSIONS)
     ]
 
     return {
-        "slides": [{"name": f, "type": detect_slide_type(f)} for f in sorted(files)]
+        "slides": [
+            {"name": f, "type": detect_slide_type(f)}
+            for f in sorted(files)
+        ]
     }
 
 
@@ -143,7 +191,7 @@ def get_viv_info(filename: str):
     return {
         "name": filename,
         "type": slide_type,
-        "source_url": f"http://localhost:8000/slide/{quote(filename)}/source",
+        "source_url": f"/slide/{quote(filename)}/source",
         "metadata": metadata,
         "channels": channels,
     }
@@ -152,19 +200,13 @@ def get_viv_info(filename: str):
 @app.get("/slide/{filename}/source")
 def get_slide_source(filename: str):
     filepath = get_slide_path(filename)
-    slide_type = detect_slide_type(filename)
-
-    if slide_type == "ome-tiff":
-        media_type = "image/tiff"
-    elif slide_type in ("tiff",):
-        media_type = "image/tiff"
-    else:
-        media_type = "application/octet-stream"
+    media_type = get_media_type_for_source(filename)
 
     return FileResponse(
         path=filepath,
-        filename=filename,
+        filename=os.path.basename(filename),
         media_type=media_type,
+        headers=SOURCE_HEADERS,
     )
 
 
@@ -177,9 +219,10 @@ def get_thumbnail(
 ):
     filepath = get_slide_path(filename)
     slide_type = detect_slide_type(filename)
+    max_size = normalize_max_size(max_size)
 
     try:
-        ts = large_image.getTileSource(filepath)
+        ts = get_cached_tilesource(filepath)
 
         result = ts.getThumbnail(
             width=max_size,
@@ -194,11 +237,19 @@ def get_thumbnail(
             image_binary = tint_grayscale_tile(image_binary, color=color)
             mime_type = "image/png"
 
-        return Response(content=image_binary, media_type=mime_type)
+        return Response(
+            content=image_binary,
+            media_type=mime_type,
+            headers=CACHE_HEADERS,
+        )
 
     except Exception as e:
         print(f"THUMBNAIL ERROR for {filename} frame={frame}: {e}")
-        return Response(content=EMPTY_TILE, media_type="image/png")
+        return Response(
+            content=EMPTY_TILE,
+            media_type="image/png",
+            headers=CACHE_HEADERS,
+        )
 
 
 @app.get("/slide/{filename}/tiles/{z}/{x}/{y}")
@@ -214,8 +265,15 @@ def get_tile(
     slide_type = detect_slide_type(filename)
 
     try:
-        ts = large_image.getTileSource(filepath)
-        result = ts.getTile(x, y, z, frame=frame, encoding="JPEG")
+        ts = get_cached_tilesource(filepath)
+
+        result = ts.getTile(
+            x,
+            y,
+            z,
+            frame=frame,
+            encoding="JPEG",
+        )
 
         tile_binary, mime_type = unpack_image_result(result)
 
@@ -223,8 +281,16 @@ def get_tile(
             tile_binary = tint_grayscale_tile(tile_binary, color=color)
             mime_type = "image/png"
 
-        return Response(content=tile_binary, media_type=mime_type)
+        return Response(
+            content=tile_binary,
+            media_type=mime_type,
+            headers=CACHE_HEADERS,
+        )
 
     except Exception as e:
         print(f"TILE ERROR for {filename} z={z} x={x} y={y} frame={frame}: {e}")
-        return Response(content=EMPTY_TILE, media_type="image/png")
+        return Response(
+            content=EMPTY_TILE,
+            media_type="image/png",
+            headers=CACHE_HEADERS,
+        )

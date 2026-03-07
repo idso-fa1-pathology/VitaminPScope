@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchSlides, fetchSlideMetadata } from "../api/slides";
 import SlideList from "../components/SlideList";
 import SlideInfo from "../components/SlideInfo";
@@ -6,11 +6,30 @@ import ChannelPanel from "../components/ChannelPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
 import VivViewer from "../viewers/VivViewer";
 
+const DEFAULT_CHANNEL_PALETTE = [
+  "#0000ff", // blue
+  "#00ff00", // green
+  "#ff0000", // red
+  "#ffff00", // yellow
+  "#ff00ff", // magenta
+  "#00ffff", // cyan
+  "#ff9900", // orange
+  "#ffffff", // white
+  "#8a2be2", // blueviolet
+  "#7fff00", // chartreuse
+  "#ff69b4", // hotpink
+  "#00bfff", // deepskyblue
+];
+
 function ViewerPage() {
   const [slides, setSlides] = useState([]);
   const [selectedSlide, setSelectedSlide] = useState(null);
   const [slideInfo, setSlideInfo] = useState(null);
-  const [selectedChannels, setSelectedChannels] = useState([]);
+
+  // Stable per-channel settings, persisted for the current slide
+  const [channelSettings, setChannelSettings] = useState({});
+  // Enabled channels only
+  const [enabledChannelIndexes, setEnabledChannelIndexes] = useState([]);
 
   useEffect(() => {
     fetchSlides()
@@ -19,37 +38,74 @@ function ViewerPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedSlide) return;
+    if (!selectedSlide) {
+      setSlideInfo(null);
+      setChannelSettings({});
+      setEnabledChannelIndexes([]);
+      return;
+    }
 
     fetchSlideMetadata(selectedSlide.name)
       .then((data) => {
         setSlideInfo(data);
 
         if (data.type === "ome-tiff" && data.channels?.length) {
-          const defaultPalette = [
-            "#0000ff",
-            "#00ff00",
-            "#ff0000",
-            "#ff00ff",
-            "#ffff00",
-            "#00ffff",
-          ];
+          const nextSettings = {};
 
-          const defaults = data.channels
-            .slice(0, Math.min(3, data.channels.length))
-            .map((ch, i) => ({
-              index: ch.index,
-              color: defaultPalette[i] || "#ffffff",
+          data.channels.forEach((ch, i) => {
+            nextSettings[ch.index] = {
+              color: DEFAULT_CHANNEL_PALETTE[i % DEFAULT_CHANNEL_PALETTE.length],
               opacity: 1,
-            }));
+            };
+          });
 
-          setSelectedChannels(defaults);
+          setChannelSettings(nextSettings);
+
+          const defaultEnabled = data.channels
+            .slice(0, Math.min(4, data.channels.length))
+            .map((ch) => ch.index);
+
+          setEnabledChannelIndexes(defaultEnabled);
         } else {
-          setSelectedChannels([]);
+          setChannelSettings({});
+          setEnabledChannelIndexes([]);
         }
       })
-      .catch((err) => console.error("Error loading metadata:", err));
+      .catch((err) => {
+        console.error("Error loading metadata:", err);
+        setSlideInfo(null);
+        setChannelSettings({});
+        setEnabledChannelIndexes([]);
+      });
   }, [selectedSlide]);
+
+  const selectedChannels = useMemo(() => {
+    return enabledChannelIndexes
+      .map((index) => ({
+        index,
+        ...(channelSettings[index] || { color: "#ffffff", opacity: 1 }),
+      }))
+      .sort((a, b) => a.index - b.index);
+  }, [enabledChannelIndexes, channelSettings]);
+
+  const toggleChannel = (index) => {
+    setEnabledChannelIndexes((prev) => {
+      if (prev.includes(index)) {
+        return prev.filter((i) => i !== index);
+      }
+      return [...prev, index].sort((a, b) => a - b);
+    });
+  };
+
+  const updateChannelSettings = (index, patch) => {
+    setChannelSettings((prev) => ({
+      ...prev,
+      [index]: {
+        ...(prev[index] || { color: "#ffffff", opacity: 1 }),
+        ...patch,
+      },
+    }));
+  };
 
   const isOme = slideInfo?.type === "ome-tiff";
 
@@ -76,12 +132,14 @@ function ViewerPage() {
           <ChannelPanel
             channels={slideInfo.channels}
             selectedChannels={selectedChannels}
-            onChange={setSelectedChannels}
+            channelSettings={channelSettings}
+            onToggle={toggleChannel}
+            onUpdate={updateChannelSettings}
           />
         ) : null}
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ padding: "1rem", borderBottom: "1px solid #ccc" }}>
           <h3>
             Viewer
