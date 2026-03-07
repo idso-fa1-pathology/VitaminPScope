@@ -1,14 +1,18 @@
 import React from "react";
 
-function ChannelPanel({ channels, selectedChannels, channelSettings, onToggle, onUpdate }) {
+function ChannelPanel({
+  channels,
+  selectedChannels,
+  channelSettings,
+  onToggle,
+  onUpdate,
+}) {
   if (!channels?.length) return null;
 
   const selectedSet = new Set((selectedChannels || []).map((c) => c.index));
 
   return (
-    <div style={{ marginTop: "1rem" }}>
-      <h3>Channels</h3>
-
+    <div className="channel-panel">
       {channels.map((ch) => {
         const selected = selectedSet.has(ch.index);
         const settings = channelSettings?.[ch.index] || {
@@ -19,47 +23,57 @@ function ChannelPanel({ channels, selectedChannels, channelSettings, onToggle, o
         return (
           <div
             key={ch.index}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              padding: "8px",
-              marginBottom: "8px",
-              background: "#fff",
-            }}
+            className={`channel-card ${selected ? "channel-card--active" : ""}`}
           >
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={() => onToggle(ch.index)}
+            <label className="channel-card__header">
+              <div className="channel-card__left">
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={() => onToggle(ch.index)}
+                  className="channel-card__checkbox"
+                />
+                <div className="channel-card__title-group">
+                  <span className="channel-card__title">{ch.name}</span>
+                  <span className="channel-card__subtitle">
+                    Channel {ch.index}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                className="channel-card__swatch"
+                style={{ backgroundColor: settings.color }}
               />
-              <span>{ch.name}</span>
             </label>
 
             {selected && (
-              <div style={{ marginTop: "8px" }}>
-                <div style={{ marginBottom: "6px" }}>
-                  <label style={{ display: "block", fontSize: "12px" }}>Color</label>
-                  <input
-                    type="color"
-                    value={settings.color}
-                    onChange={(e) =>
-                      onUpdate(ch.index, { color: e.target.value })
-                    }
-                  />
+              <div className="channel-card__controls">
+                <div className="channel-control-row">
+                  <label className="channel-control-label">Tint color</label>
+                  <div className="channel-color-wrap">
+                    <input
+                      type="color"
+                      value={settings.color}
+                      onChange={(e) =>
+                        onUpdate(ch.index, { color: e.target.value })
+                      }
+                      className="channel-color-input"
+                    />
+                    <span className="channel-color-value">
+                      {settings.color.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "12px" }}>
-                    Opacity: {(settings.opacity ?? 1).toFixed(2)}
-                  </label>
+                <div className="channel-control-row">
+                  <div className="channel-opacity-header">
+                    <label className="channel-control-label">Opacity</label>
+                    <span className="channel-opacity-value">
+                      {Math.round((settings.opacity ?? 1) * 100)}%
+                    </span>
+                  </div>
+
                   <input
                     type="range"
                     min="0.05"
@@ -69,7 +83,7 @@ function ChannelPanel({ channels, selectedChannels, channelSettings, onToggle, o
                     onChange={(e) =>
                       onUpdate(ch.index, { opacity: Number(e.target.value) })
                     }
-                    style={{ width: "100%" }}
+                    className="channel-slider"
                   />
                 </div>
               </div>
