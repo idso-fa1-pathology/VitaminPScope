@@ -28,136 +28,269 @@ function getSlideIcon(type) {
   return "🖼️";
 }
 
-function ViewerInfoSection({ selectedSlide, slideInfo, isOme, selectedChannelsCount }) {
+function formatValue(value, fallback = "-") {
+  return value === undefined || value === null || value === "" ? fallback : String(value);
+}
+
+function formatNumber(value, decimals = 0) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return "-";
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function formatPixels(value) {
+  if (value === undefined || value === null) return "-";
+  return `${formatNumber(value)} px`;
+}
+
+function formatMicronsPerPixelFromMm(mmValue) {
+  if (mmValue === undefined || mmValue === null || Number.isNaN(Number(mmValue))) return "-";
+  const micronsPerPixel = Number(mmValue) * 1000;
+  return `${formatNumber(micronsPerPixel, 3)} µm/px`;
+}
+
+function formatMagnification(value) {
+  if (value === undefined || value === null || value === "") return "-";
+  const normalized = String(value).replace(/x$/i, "");
+  return `${normalized}×`;
+}
+
+function formatDataType(value) {
+  if (!value) return "-";
+  return String(value).toUpperCase();
+}
+
+function getChannelColor(index) {
+  if (DEFAULT_CHANNEL_PALETTE[index]) return DEFAULT_CHANNEL_PALETTE[index];
+  const hue = (index * 137.508) % 360;
+  return `hsl(${hue}, 85%, 60%)`;
+}
+
+function getBandCount(slideInfo) {
+  const metadataBandCount = Number(slideInfo?.metadata?.bandCount);
+  const rootBandCount = Number(slideInfo?.bandCount);
+
+  if (Number.isFinite(metadataBandCount) && metadataBandCount > 0) return metadataBandCount;
+  if (Number.isFinite(rootBandCount) && rootBandCount > 0) return rootBandCount;
+
+  return 0;
+}
+
+function normalizeChannels(slideInfo) {
+  if (Array.isArray(slideInfo?.channels) && slideInfo.channels.length) {
+    return slideInfo.channels.map((channel, position) => {
+      const resolvedIndex =
+        channel?.index !== undefined && channel?.index !== null
+          ? Number(channel.index)
+          : position;
+
+      return {
+        ...channel,
+        index: Number.isFinite(resolvedIndex) ? resolvedIndex : position,
+        name:
+          channel?.name ||
+          channel?.label ||
+          `Channel ${Number.isFinite(resolvedIndex) ? resolvedIndex + 1 : position + 1}`,
+      };
+    });
+  }
+
+  const bandCount = getBandCount(slideInfo);
+
+  if (bandCount > 0) {
+    return Array.from({ length: bandCount }, (_, index) => ({
+      index,
+      name: `Channel ${index + 1}`,
+    }));
+  }
+
+  return [];
+}
+
+function buildDefaultChannelSettings(channels = []) {
+  const nextSettings = {};
+
+  channels.forEach((channel, i) => {
+    nextSettings[channel.index] = {
+      color: getChannelColor(i),
+      opacity: 1,
+    };
+  });
+
+  return nextSettings;
+}
+
+function buildMetadataRows(metadata) {
+  return [
+    { label: "Image width", value: formatPixels(metadata.sizeX) },
+    { label: "Image height", value: formatPixels(metadata.sizeY) },
+    { label: "Resolution X", value: formatMicronsPerPixelFromMm(metadata.mm_x) },
+    { label: "Resolution Y", value: formatMicronsPerPixelFromMm(metadata.mm_y) },
+    { label: "Pyramid levels", value: formatValue(metadata.levels) },
+    { label: "Tile width", value: formatPixels(metadata.tileWidth) },
+    { label: "Tile height", value: formatPixels(metadata.tileHeight) },
+    { label: "Magnification", value: formatMagnification(metadata.magnification) },
+    { label: "Data type", value: formatDataType(metadata.dtype) },
+    { label: "Band count", value: formatValue(metadata.bandCount) },
+  ].filter((row) => row.value !== "-");
+}
+
+function SidebarSection({ title, subtitle, children }) {
   return (
-    <div className="viewer-sidebar__section">
+    <section className="viewer-sidebar__section">
       <div className="viewer-sidebar__section-header">
-        <h3 className="viewer-sidebar__section-title">Slide overview</h3>
-        <p className="viewer-sidebar__section-subtitle">
-          Metadata and quick context for the current file
-        </p>
+        <h3 className="viewer-sidebar__section-title">{title}</h3>
+        {subtitle ? <p className="viewer-sidebar__section-subtitle">{subtitle}</p> : null}
       </div>
 
-      <div className="viewer-sidebar__section-body">
-        <div className="viewer-kv-list">
-          <div className="viewer-kv-row">
-            <div className="viewer-kv-key">Name</div>
-            <div className="viewer-kv-value">{selectedSlide?.name || "-"}</div>
-          </div>
-          <div className="viewer-kv-row">
-            <div className="viewer-kv-key">Type</div>
-            <div className="viewer-kv-value">{slideInfo?.type || "-"}</div>
-          </div>
-          <div className="viewer-kv-row">
-            <div className="viewer-kv-key">Viewer</div>
-            <div className="viewer-kv-value">{isOme ? "Viv" : "OpenSeadragon"}</div>
-          </div>
-          <div className="viewer-kv-row">
-            <div className="viewer-kv-key">Channels</div>
-            <div className="viewer-kv-value">
-              {slideInfo?.channels?.length || 0} total / {selectedChannelsCount} active
-            </div>
-          </div>
+      <div className="viewer-sidebar__section-body">{children}</div>
+    </section>
+  );
+}
+
+function KvList({ rows }) {
+  if (!rows?.length) return null;
+
+  return (
+    <div className="viewer-kv-list">
+      {rows.map((row) => (
+        <div className="viewer-kv-row" key={row.label}>
+          <div className="viewer-kv-key">{row.label}</div>
+          <div className="viewer-kv-value">{row.value}</div>
         </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-function ViewerStatusSection({ slideInfo, isOme, selectedChannelsCount }) {
-  return (
-    <div className="viewer-sidebar__section">
-      <div className="viewer-sidebar__section-header">
-        <h3 className="viewer-sidebar__section-title">Workspace status</h3>
-        <p className="viewer-sidebar__section-subtitle">
-          Review-ready summary of the current viewer state
-        </p>
-      </div>
+function ViewerInfoSection({ selectedSlide, slideInfo, isOme, selectedChannelsCount, detectedChannelCount }) {
+  const rows = [
+    { label: "Slide name", value: formatValue(selectedSlide?.name) },
+    { label: "Format", value: formatValue(slideInfo?.type) },
+    { label: "Viewer engine", value: isOme ? "Viv" : "OpenSeadragon" },
+    {
+      label: "Channels",
+      value: `${detectedChannelCount} total • ${selectedChannelsCount} active`,
+    },
+  ];
 
-      <div className="viewer-sidebar__section-body">
-        <div className="viewer-status-grid">
-          <div className="viewer-status-card">
-            <div className="viewer-status-card__label">Mode</div>
-            <div className="viewer-status-card__value">{isOme ? "Multi" : "WSI"}</div>
-          </div>
-          <div className="viewer-status-card">
-            <div className="viewer-status-card__label">Active</div>
-            <div className="viewer-status-card__value">{selectedChannelsCount}</div>
-          </div>
-          <div className="viewer-status-card">
-            <div className="viewer-status-card__label">Detected</div>
-            <div className="viewer-status-card__value">{slideInfo?.channels?.length || 0}</div>
-          </div>
-          <div className="viewer-status-card">
-            <div className="viewer-status-card__label">Format</div>
-            <div className="viewer-status-card__value">{slideInfo?.type || "-"}</div>
-          </div>
+  return (
+    <SidebarSection
+      title="Slide overview"
+      subtitle="Core information for the file currently open"
+    >
+      <KvList rows={rows} />
+    </SidebarSection>
+  );
+}
+
+function ViewerStatusSection({ slideInfo, isOme, selectedChannelsCount, detectedChannelCount }) {
+  return (
+    <SidebarSection
+      title="Workspace status"
+      subtitle="Quick review of the current viewing session"
+    >
+      <div className="viewer-status-grid">
+        <div className="viewer-status-card">
+          <div className="viewer-status-card__label">Mode</div>
+          <div className="viewer-status-card__value">{isOme ? "Multichannel" : "WSI"}</div>
+        </div>
+
+        <div className="viewer-status-card">
+          <div className="viewer-status-card__label">Format</div>
+          <div className="viewer-status-card__value">{formatValue(slideInfo?.type)}</div>
+        </div>
+
+        <div className="viewer-status-card">
+          <div className="viewer-status-card__label">Active</div>
+          <div className="viewer-status-card__value">{selectedChannelsCount}</div>
+        </div>
+
+        <div className="viewer-status-card">
+          <div className="viewer-status-card__label">Detected</div>
+          <div className="viewer-status-card__value">{detectedChannelCount}</div>
         </div>
       </div>
-    </div>
+    </SidebarSection>
   );
 }
 
 function ViewerMetadataSection({ slideInfo }) {
   const metadata = slideInfo?.metadata || {};
-
-  const rows = [
-    { label: "Width", value: metadata.sizeX },
-    { label: "Height", value: metadata.sizeY },
-    { label: "Levels", value: metadata.levels },
-    { label: "Tile width", value: metadata.tileWidth },
-    { label: "Tile height", value: metadata.tileHeight },
-    { label: "Data type", value: metadata.dtype },
-    { label: "Band count", value: metadata.bandCount },
-    { label: "Magnification", value: metadata.magnification },
-    { label: "mm_x", value: metadata.mm_x },
-    { label: "mm_y", value: metadata.mm_y },
-  ].filter((row) => row.value !== undefined && row.value !== null);
+  const rows = buildMetadataRows(metadata);
 
   if (!rows.length) return null;
 
   return (
-    <div className="viewer-sidebar__section">
-      <div className="viewer-sidebar__section-header">
-        <h3 className="viewer-sidebar__section-title">Image metadata</h3>
-        <p className="viewer-sidebar__section-subtitle">
-          Technical properties reported by the slide file
-        </p>
-      </div>
-
-      <div className="viewer-sidebar__section-body">
-        <div className="viewer-kv-list">
-          {rows.map((row) => (
-            <div className="viewer-kv-row" key={row.label}>
-              <div className="viewer-kv-key">{row.label}</div>
-              <div className="viewer-kv-value">{String(row.value)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <SidebarSection
+      title="Image metadata"
+      subtitle="Technical properties reported by the slide"
+    >
+      <KvList rows={rows} />
+    </SidebarSection>
   );
 }
 
-function ViewerToolsSection() {
+function ViewerToolsSection({ onResetView, onZoomIn, onZoomOut, onSetTool }) {
   return (
-    <div className="viewer-sidebar__section">
-      <div className="viewer-sidebar__section-header">
-        <h3 className="viewer-sidebar__section-title">Quick tools</h3>
-        <p className="viewer-sidebar__section-subtitle">
-          Viewer workspace shortcuts and future tools
-        </p>
+    <SidebarSection
+      title="Quick actions"
+      subtitle="Common viewer actions for faster workflow"
+    >
+      <div className="viewer-tool-list">
+        <button className="viewer-tool-btn" onClick={onResetView} type="button">
+          🧭 Reset view
+        </button>
+        <button className="viewer-tool-btn" onClick={onZoomIn} type="button">
+          ＋ Zoom in
+        </button>
+        <button className="viewer-tool-btn" onClick={onZoomOut} type="button">
+          － Zoom out
+        </button>
+        <button className="viewer-tool-btn" onClick={() => onSetTool("measure")} type="button">
+          📏 Measurement mode
+        </button>
+        <button className="viewer-tool-btn" onClick={() => onSetTool("annotate")} type="button">
+          📝 Annotation mode
+        </button>
+        <button className="viewer-tool-btn" onClick={() => onSetTool("ai")} type="button">
+          🤖 AI overlay
+        </button>
       </div>
+    </SidebarSection>
+  );
+}
 
-      <div className="viewer-sidebar__section-body">
-        <div className="viewer-tool-list">
-          <button className="viewer-tool-btn">🧭 Reset camera</button>
-          <button className="viewer-tool-btn">📏 Measurement tools</button>
-          <button className="viewer-tool-btn">📝 Annotations</button>
-          <button className="viewer-tool-btn">🤖 AI overlay panel</button>
+function ViewerChannelSummarySection({ channels, selectedChannels }) {
+  if (!channels?.length) return null;
+
+  const activeNames = channels
+    .filter((channel) => selectedChannels.some((selected) => selected.index === channel.index))
+    .map((channel) => channel.name || `Channel ${channel.index + 1}`);
+
+  return (
+    <SidebarSection
+      title="Channel summary"
+      subtitle="Overview of currently enabled channels"
+    >
+      <div className="viewer-kv-list">
+        <div className="viewer-kv-row">
+          <div className="viewer-kv-key">Enabled channels</div>
+          <div className="viewer-kv-value">
+            {selectedChannels.length} / {channels.length}
+          </div>
+        </div>
+
+        <div className="viewer-kv-row">
+          <div className="viewer-kv-key">Active names</div>
+          <div className="viewer-kv-value">
+            {activeNames.length ? activeNames.join(", ") : "None selected"}
+          </div>
         </div>
       </div>
-    </div>
+    </SidebarSection>
   );
 }
 
@@ -183,7 +316,11 @@ function ViewerPage() {
         const foundSlide = allSlides.find((slide) => slide.name === decodedSlideName);
         setSelectedSlide(foundSlide || null);
       })
-      .catch((err) => console.error("Error fetching slides:", err));
+      .catch((err) => {
+        console.error("Error fetching slides:", err);
+        setSlides([]);
+        setSelectedSlide(null);
+      });
   }, [slideName]);
 
   useEffect(() => {
@@ -198,23 +335,21 @@ function ViewerPage() {
       .then((data) => {
         setSlideInfo(data);
 
-        if (data.type === "ome-tiff" && data.channels?.length) {
-          const nextSettings = {};
+        if (data.type === "ome-tiff") {
+          const resolvedChannels = normalizeChannels(data);
 
-          data.channels.forEach((ch, i) => {
-            nextSettings[ch.index] = {
-              color: DEFAULT_CHANNEL_PALETTE[i % DEFAULT_CHANNEL_PALETTE.length],
-              opacity: 1,
-            };
-          });
+          if (resolvedChannels.length) {
+            setChannelSettings(buildDefaultChannelSettings(resolvedChannels));
 
-          setChannelSettings(nextSettings);
+            const defaultEnabled = resolvedChannels
+              .slice(0, Math.min(6, resolvedChannels.length))
+              .map((channel) => channel.index);
 
-          const defaultEnabled = data.channels
-            .slice(0, Math.min(4, data.channels.length))
-            .map((ch) => ch.index);
-
-          setEnabledChannelIndexes(defaultEnabled);
+            setEnabledChannelIndexes(defaultEnabled);
+          } else {
+            setChannelSettings({});
+            setEnabledChannelIndexes([]);
+          }
         } else {
           setChannelSettings({});
           setEnabledChannelIndexes([]);
@@ -227,6 +362,8 @@ function ViewerPage() {
         setEnabledChannelIndexes([]);
       });
   }, [selectedSlide]);
+
+  const normalizedChannels = useMemo(() => normalizeChannels(slideInfo), [slideInfo]);
 
   const selectedChannels = useMemo(() => {
     return enabledChannelIndexes
@@ -256,6 +393,20 @@ function ViewerPage() {
     }));
   };
 
+  const handleEnableAllChannels = () => {
+    if (!normalizedChannels.length) return;
+    setEnabledChannelIndexes(normalizedChannels.map((channel) => channel.index));
+  };
+
+  const handleDisableAllChannels = () => {
+    setEnabledChannelIndexes([]);
+  };
+
+  const handleResetAllChannels = () => {
+    if (!normalizedChannels.length) return;
+    setChannelSettings(buildDefaultChannelSettings(normalizedChannels));
+  };
+
   const handleZoomIn = () => {
     viewerControlsRef.current?.zoomIn?.();
   };
@@ -280,7 +431,7 @@ function ViewerPage() {
     return (
       <div className="viewer-not-found">
         <div className="viewer-not-found__header">
-          <button className="viewer-btn-ghost" onClick={() => navigate("/")}>
+          <button className="viewer-btn-ghost" onClick={() => navigate("/")} type="button">
             ← Back to File Manager
           </button>
           <strong>VitaminPScope Viewer</strong>
@@ -297,15 +448,13 @@ function ViewerPage() {
     <div className="viewer-page">
       <header className="viewer-topbar">
         <div className="viewer-topbar__left">
-          <button className="viewer-btn-ghost" onClick={() => navigate("/")}>
+          <button className="viewer-btn-ghost" onClick={() => navigate("/")} type="button">
             ← File Manager
           </button>
 
           <div className="viewer-brand">
             <div className="viewer-brand__title">VitaminPScope Viewer</div>
-            <div className="viewer-brand__subtitle">
-              Diagnostic slide workspace
-            </div>
+            <div className="viewer-brand__subtitle">Diagnostic slide workspace</div>
           </div>
 
           <div className="viewer-file-chip">
@@ -333,8 +482,12 @@ function ViewerPage() {
             </select>
           </div>
 
-          <button className="viewer-btn-secondary">Export snapshot</button>
-          <button className="viewer-btn">Open analysis</button>
+          <button className="viewer-btn-secondary" type="button">
+            Export snapshot
+          </button>
+          <button className="viewer-btn" type="button">
+            Open analysis
+          </button>
         </div>
       </header>
 
@@ -345,38 +498,49 @@ function ViewerPage() {
             slideInfo={slideInfo}
             isOme={isOme}
             selectedChannelsCount={selectedChannels.length}
+            detectedChannelCount={normalizedChannels.length}
           />
 
           <ViewerStatusSection
             slideInfo={slideInfo}
             isOme={isOme}
             selectedChannelsCount={selectedChannels.length}
+            detectedChannelCount={normalizedChannels.length}
           />
 
           <ViewerMetadataSection slideInfo={slideInfo} />
 
-          {isOme && slideInfo?.channels?.length ? (
-            <div className="viewer-sidebar__section">
-              <div className="viewer-sidebar__section-header">
-                <h3 className="viewer-sidebar__section-title">Channel controls</h3>
-                <p className="viewer-sidebar__section-subtitle">
-                  Enable, tint, and adjust multichannel rendering
-                </p>
-              </div>
-
-              <div className="viewer-sidebar__section-body">
-                <ChannelPanel
-                  channels={slideInfo.channels}
-                  selectedChannels={selectedChannels}
-                  channelSettings={channelSettings}
-                  onToggle={toggleChannel}
-                  onUpdate={updateChannelSettings}
-                />
-              </div>
-            </div>
+          {isOme ? (
+            <ViewerChannelSummarySection
+              channels={normalizedChannels}
+              selectedChannels={selectedChannels}
+            />
           ) : null}
 
-          <ViewerToolsSection />
+          {isOme && normalizedChannels.length ? (
+            <SidebarSection
+              title="Channel controls"
+              subtitle="Enable, filter, tint, and adjust multichannel rendering"
+            >
+              <ChannelPanel
+                channels={normalizedChannels}
+                selectedChannels={selectedChannels}
+                channelSettings={channelSettings}
+                onToggle={toggleChannel}
+                onUpdate={updateChannelSettings}
+                onEnableAll={handleEnableAllChannels}
+                onDisableAll={handleDisableAllChannels}
+                onResetAll={handleResetAllChannels}
+              />
+            </SidebarSection>
+          ) : null}
+
+          <ViewerToolsSection
+            onResetView={handleResetView}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onSetTool={setActiveTool}
+          />
         </aside>
 
         <main className="viewer-stage">
@@ -392,41 +556,49 @@ function ViewerPage() {
               <button
                 className={`viewer-stage-btn ${activeTool === "pan" ? "active" : ""}`}
                 onClick={() => setActiveTool("pan")}
+                type="button"
               >
                 ✋ Pan
               </button>
+
               <button
                 className={`viewer-stage-btn ${activeTool === "measure" ? "active" : ""}`}
                 onClick={() => setActiveTool("measure")}
+                type="button"
               >
                 📏 Measure
               </button>
+
               <button
                 className={`viewer-stage-btn ${activeTool === "annotate" ? "active" : ""}`}
                 onClick={() => setActiveTool("annotate")}
+                type="button"
               >
                 📝 Annotate
               </button>
+
               <button
                 className={`viewer-stage-btn ${activeTool === "ai" ? "active" : ""}`}
                 onClick={() => setActiveTool("ai")}
+                type="button"
               >
                 🤖 AI
               </button>
             </div>
 
             <div className="viewer-stage__toolbar-right">
-              <button className="viewer-stage-icon-btn" onClick={handleZoomIn}>
+              <button className="viewer-stage-icon-btn" onClick={handleZoomIn} type="button">
                 ＋
               </button>
-              <button className="viewer-stage-icon-btn" onClick={handleZoomOut}>
+              <button className="viewer-stage-icon-btn" onClick={handleZoomOut} type="button">
                 －
               </button>
-              <button className="viewer-stage-icon-btn" onClick={handleResetView}>
+              <button className="viewer-stage-icon-btn" onClick={handleResetView} type="button">
                 ⌂
               </button>
               <span className="viewer-badge">
-                {selectedChannels.length} active channel{selectedChannels.length === 1 ? "" : "s"}
+                {selectedChannels.length} active channel
+                {selectedChannels.length === 1 ? "" : "s"}
               </span>
             </div>
           </div>

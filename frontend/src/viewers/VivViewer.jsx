@@ -10,6 +10,7 @@ import {
 import DeckGL from "@deck.gl/react";
 import { OrthographicView } from "@deck.gl/core";
 import { loadOmeTiff, MultiscaleImageLayer } from "@hms-dbmi/viv";
+import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
 
 const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
@@ -29,15 +30,25 @@ const DECK_CONTROLLER = {
 
 function hexToRgb(hex) {
   const clean = (hex || "#ffffff").replace("#", "");
-  const r = parseInt(clean.slice(0, 2), 16) || 255;
-  const g = parseInt(clean.slice(2, 4), 16) || 255;
-  const b = parseInt(clean.slice(4, 6), 16) || 255;
+  const expanded =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+
+  const r = parseInt(expanded.slice(0, 2), 16) || 255;
+  const g = parseInt(expanded.slice(2, 4), 16) || 255;
+  const b = parseInt(expanded.slice(4, 6), 16) || 255;
   return [r, g, b];
 }
 
 function fallbackContrastLimits(dtype) {
-  if (dtype === "uint16") return [0, 12000];
-  if (dtype === "uint8") return [0, 220];
+  const normalized = String(dtype || "").toLowerCase();
+
+  if (normalized === "uint16") return [0, 12000];
+  if (normalized === "uint8") return [0, 220];
   return [0, 1];
 }
 
@@ -127,16 +138,64 @@ async function estimateContrastFromThumbnail(thumbnailUrl, dtype) {
     upper8 = Math.min(255, lower8 + 32);
   }
 
-  if (dtype === "uint16") {
+  const normalized = String(dtype || "").toLowerCase();
+
+  if (normalized === "uint16") {
     const scale16 = 65535 / 255;
     return [Math.round(lower8 * scale16), Math.round(upper8 * scale16)];
   }
 
-  if (dtype === "uint8") {
+  if (normalized === "uint8") {
     return [Math.round(lower8), Math.round(upper8)];
   }
 
   return [0, 1];
+}
+
+function getBandCount(slideInfo) {
+  const metadataBandCount = Number(slideInfo?.metadata?.bandCount);
+  const rootBandCount = Number(slideInfo?.bandCount);
+
+  if (Number.isFinite(metadataBandCount) && metadataBandCount > 0) {
+    return metadataBandCount;
+  }
+
+  if (Number.isFinite(rootBandCount) && rootBandCount > 0) {
+    return rootBandCount;
+  }
+
+  return 0;
+}
+
+function normalizeChannels(slideInfo) {
+  if (Array.isArray(slideInfo?.channels) && slideInfo.channels.length) {
+    return slideInfo.channels.map((channel, position) => {
+      const resolvedIndex =
+        channel?.index !== undefined && channel?.index !== null
+          ? Number(channel.index)
+          : position;
+
+      return {
+        ...channel,
+        index: Number.isFinite(resolvedIndex) ? resolvedIndex : position,
+        name:
+          channel?.name ||
+          channel?.label ||
+          `Channel ${Number.isFinite(resolvedIndex) ? resolvedIndex + 1 : position + 1}`,
+      };
+    });
+  }
+
+  const bandCount = getBandCount(slideInfo);
+
+  if (bandCount > 0) {
+    return Array.from({ length: bandCount }, (_, index) => ({
+      index,
+      name: `Channel ${index + 1}`,
+    }));
+  }
+
+  return [];
 }
 
 function buildPerChannelContrastMap(channels, limits) {
@@ -173,6 +232,7 @@ const VivViewer = forwardRef(function VivViewer(
   const [loading, setLoading] = useState(false);
   const [showThumbnail, setShowThumbnail] = useState(true);
   const [error, setError] = useState("");
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   const sourceUrl = useMemo(() => {
     if (!slide) return null;
@@ -183,6 +243,8 @@ const VivViewer = forwardRef(function VivViewer(
     if (!slide) return null;
     return `${API_BASE}/slide/${encodeURIComponent(slide.name)}/thumbnail?max_size=1400`;
   }, [slide]);
+
+  const normalizedChannels = useMemo(() => normalizeChannels(slideInfo), [slideInfo]);
 
   const selectedChannelsSignature = useMemo(() => {
     const list = Array.isArray(selectedChannels) ? selectedChannels : [];
@@ -195,16 +257,19 @@ const VivViewer = forwardRef(function VivViewer(
   const activeChannels = useMemo(() => {
     const list = Array.isArray(selectedChannels) ? selectedChannels : [];
     return list
+      .filter((ch) => ch?.index !== undefined && ch?.index !== null)
       .map((ch) => ({
-        index: ch.index,
+        index: Number(ch.index),
         color: ch.color || "#ffffff",
         opacity: ch.opacity ?? 1,
       }))
+      .filter((ch) => Number.isFinite(ch.index))
       .sort((a, b) => a.index - b.index);
   }, [selectedChannelsSignature]);
 
   const coloredThumbnailUrls = useMemo(() => {
     if (!slide || !activeChannels.length) return [];
+
     return activeChannels.map((ch) => ({
       index: ch.index,
       color: ch.color,
@@ -239,29 +304,43 @@ const VivViewer = forwardRef(function VivViewer(
     ].join("||");
   }, [slide?.name, loader, selectedChannelsSignature, contrastSignature]);
 
-  useImperativeHandle(ref, () => ({
-    zoomIn() {
-      setViewState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          zoom: Math.min((prev.maxZoom ?? prev.zoom + 8), prev.zoom + 0.5),
-        };
-      });
-    },
-    zoomOut() {
-      setViewState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          zoom: Math.max((prev.minZoom ?? prev.zoom - 4), prev.zoom - 0.5),
-        };
-      });
-    },
-    resetView() {
-      setViewState(deckInitialViewState || null);
-    },
-  }), [deckInitialViewState]);
+  const vivScaleBar = useMemo(() => {
+    const metersPerPixel = getMetersPerPixel(slideInfo);
+
+    return getVivScaleBar({
+      viewState,
+      containerWidth: containerSize.width,
+      metersPerPixel,
+    });
+  }, [slideInfo, viewState, containerSize.width]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      zoomIn() {
+        setViewState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            zoom: Math.min(prev.maxZoom ?? prev.zoom + 8, prev.zoom + 0.5),
+          };
+        });
+      },
+      zoomOut() {
+        setViewState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            zoom: Math.max(prev.minZoom ?? prev.zoom - 4, prev.zoom - 0.5),
+          };
+        });
+      },
+      resetView() {
+        setViewState(deckInitialViewState || null);
+      },
+    }),
+    [deckInitialViewState]
+  );
 
   useEffect(() => {
     return () => {
@@ -269,6 +348,25 @@ const VivViewer = forwardRef(function VivViewer(
         cancelAnimationFrame(hideThumbRafRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateSize = () => {
+      const node = containerRef.current;
+      setContainerSize({
+        width: node?.clientWidth || 0,
+        height: node?.clientHeight || 0,
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -308,14 +406,15 @@ const VivViewer = forwardRef(function VivViewer(
         const fastDefault = fallbackContrastLimits(dtype);
 
         setContrastByChannel(
-          buildPerChannelContrastMap(slideInfo.channels, fastDefault)
+          buildPerChannelContrastMap(normalizedChannels, fastDefault)
         );
 
         const contrastPromise = estimateContrastFromThumbnail(thumbnailUrl, dtype)
           .then((estimatedLimits) => {
             if (cancelled || startupSessionRef.current !== mySession) return;
+
             setContrastByChannel(
-              buildPerChannelContrastMap(slideInfo.channels, estimatedLimits)
+              buildPerChannelContrastMap(normalizedChannels, estimatedLimits)
             );
           })
           .catch(() => {})
@@ -339,7 +438,13 @@ const VivViewer = forwardRef(function VivViewer(
         const imageWidth = slideInfo.metadata?.sizeX || 1;
         const imageHeight = slideInfo.metadata?.sizeY || 1;
 
-        const initial = getManualInitialViewState(width, height, imageWidth, imageHeight);
+        const initial = getManualInitialViewState(
+          width,
+          height,
+          imageWidth,
+          imageHeight
+        );
+
         setDeckInitialViewState(initial);
         setViewState(initial);
 
@@ -366,10 +471,8 @@ const VivViewer = forwardRef(function VivViewer(
     slide?.name,
     sourceUrl,
     thumbnailUrl,
-    slideInfo?.metadata?.dtype,
-    slideInfo?.metadata?.sizeX,
-    slideInfo?.metadata?.sizeY,
-    slideInfo?.channels,
+    slideInfo,
+    normalizedChannels,
   ]);
 
   useEffect(() => {
@@ -415,10 +518,10 @@ const VivViewer = forwardRef(function VivViewer(
   }, [
     loader,
     slide?.name,
-    slideInfo?.metadata?.dtype,
+    slideInfo,
     activeChannels,
-    contrastSignature,
     contrastByChannel,
+    contrastSignature,
   ]);
 
   const handleAfterRender = useCallback(() => {
@@ -554,7 +657,7 @@ const VivViewer = forwardRef(function VivViewer(
         </div>
       )}
 
-      {!activeChannels.length && (
+      {!activeChannels.length && normalizedChannels.length > 0 && (
         <div
           style={{
             position: "absolute",
@@ -567,6 +670,24 @@ const VivViewer = forwardRef(function VivViewer(
           }}
         >
           No channels selected.
+        </div>
+      )}
+
+      {!activeChannels.length && normalizedChannels.length === 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#888",
+            zIndex: 4,
+            textAlign: "center",
+            padding: "1rem",
+          }}
+        >
+          No channel metadata detected for this OME-TIFF.
         </div>
       )}
 
@@ -592,6 +713,66 @@ const VivViewer = forwardRef(function VivViewer(
             getCursor={() => (activeTool === "pan" ? "grab" : "crosshair")}
             useDevicePixels={getDevicePixelRatio()}
           />
+        </div>
+      )}
+
+      {vivScaleBar && (
+        <div
+          style={{
+            position: "absolute",
+            left: 14,
+            bottom: 14,
+            zIndex: 6,
+            background: "rgba(15, 23, 42, 0.72)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.16)",
+            borderRadius: 10,
+            padding: "8px 10px 6px",
+            backdropFilter: "blur(6px)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              marginBottom: 6,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {vivScaleBar.label}
+          </div>
+
+          <div
+            style={{
+              width: `${Math.max(40, Math.min(220, vivScaleBar.widthPx))}px`,
+              height: 0,
+              borderTop: "3px solid #fff",
+              position: "relative",
+            }}
+          >
+            <span
+              style={{
+                position: "absolute",
+                left: 0,
+                top: -5,
+                width: 0,
+                height: 10,
+                borderLeft: "2px solid #fff",
+              }}
+            />
+            <span
+              style={{
+                position: "absolute",
+                right: 0,
+                top: -5,
+                width: 0,
+                height: 10,
+                borderLeft: "2px solid #fff",
+              }}
+            />
+          </div>
         </div>
       )}
 
