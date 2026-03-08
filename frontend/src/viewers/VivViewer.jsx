@@ -14,7 +14,7 @@ import AnnotationOverlay from "../annotations/AnnotationOverlay";
 import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
 import AiResultOverlay from "../overlays/AiResultOverlay";
-
+import ViewerMiniMap from "../components/ViewerMiniMap";
 const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
   (typeof window !== "undefined"
@@ -230,6 +230,9 @@ const VivViewer = forwardRef(function VivViewer(
     selectedAnnotationId,
     onSelectAnnotation,
     annotationColor,
+    showMiniMap = true,
+    miniMapWidth = 180,
+    miniMapMaxHeight = 220,
   },
   ref
 ) {
@@ -330,6 +333,36 @@ const VivViewer = forwardRef(function VivViewer(
     });
   }, [slideInfo, viewState, containerSize.width]);
 
+  const miniMapViewportRect = useMemo(() => {
+    const imageWidth = slideInfo?.metadata?.sizeX || 1;
+    const imageHeight = slideInfo?.metadata?.sizeY || 1;
+
+    if (!viewState || !containerSize.width || !containerSize.height) {
+      return {
+        x: 0,
+        y: 0,
+        width: imageWidth,
+        height: imageHeight,
+      };
+    }
+
+    const zoom = viewState.zoom ?? 0;
+    const scale = Math.pow(2, zoom);
+
+    const visibleWidth = containerSize.width / scale;
+    const visibleHeight = containerSize.height / scale;
+
+    const targetX = viewState.target?.[0] ?? imageWidth / 2;
+    const targetY = viewState.target?.[1] ?? imageHeight / 2;
+
+    return {
+      x: targetX - visibleWidth / 2,
+      y: targetY - visibleHeight / 2,
+      width: visibleWidth,
+      height: visibleHeight,
+    };
+  }, [slideInfo, viewState, containerSize.width, containerSize.height]);
+
   const imageToScreen = useCallback(
     (point) => {
       const width = containerSize.width || 1;
@@ -363,6 +396,17 @@ const VivViewer = forwardRef(function VivViewer(
     },
     [containerSize.width, containerSize.height, viewState]
   );
+
+  const handleMiniMapNavigate = useCallback((point) => {
+    setViewState((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        target: [point.x, point.y, 0],
+      };
+    });
+  }, []);
 
   useImperativeHandle(
     ref,
@@ -752,6 +796,73 @@ const VivViewer = forwardRef(function VivViewer(
             }}
             useDevicePixels={getDevicePixelRatio()}
           />
+        </div>
+      )}
+
+{showMiniMap && (
+        <div
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            zIndex: 7,
+          }}
+        >
+          <ViewerMiniMap
+            imageWidth={slideInfo?.metadata?.sizeX}
+            imageHeight={slideInfo?.metadata?.sizeY}
+            viewportRect={miniMapViewportRect}
+            onNavigate={handleMiniMapNavigate}
+            width={miniMapWidth}
+            maxHeight={miniMapMaxHeight}
+            minWidth={120}
+            title="Overview"
+          >
+            {activeChannels.length ? (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "#000",
+                }}
+              >
+                {coloredThumbnailUrls.map((thumb) => (
+                  <img
+                    key={`minimap-${thumb.index}-${thumb.color}-${thumb.opacity}`}
+                    src={thumb.url}
+                    alt={`minimap-channel-${thumb.index}`}
+                    draggable={false}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      mixBlendMode: "screen",
+                      opacity: Math.max(0.05, Math.min(1, thumb.opacity)),
+                      pointerEvents: "none",
+                      userSelect: "none",
+                    }}
+                  />
+                ))}
+              </div>
+            ) : thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt="overview"
+                draggable={false}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              />
+            ) : null}
+          </ViewerMiniMap>
         </div>
       )}
 
