@@ -13,6 +13,7 @@ import { loadOmeTiff, MultiscaleImageLayer } from "@hms-dbmi/viv";
 import AnnotationOverlay from "../annotations/AnnotationOverlay";
 import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
+import AiResultOverlay from "../overlays/AiResultOverlay";
 
 const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
@@ -222,6 +223,7 @@ const VivViewer = forwardRef(function VivViewer(
     selectedChannels,
     activeTool = TOOL_PAN,
     annotations = [],
+    aiLayers = [],
     onAddAnnotation,
     onUpdateAnnotation,
     onDeleteAnnotation,
@@ -752,6 +754,12 @@ const VivViewer = forwardRef(function VivViewer(
           />
         </div>
       )}
+
+
+      <AiResultOverlay
+        layers={aiLayers}
+        imageToScreen={imageToScreen}
+      />
 
       <AnnotationOverlay
         activeTool={activeTool}

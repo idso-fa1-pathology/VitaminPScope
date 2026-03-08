@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { fetchSlides, fetchSlideMetadata } from "../api/slides";
+import {
+  fetchSlides,
+  fetchSlideMetadata,
+  runRoiAiSegmentation,
+} from "../api/slides";
 import {
   DEFAULT_ANNOTATION_COLOR,
   TOOL_AI,
@@ -10,6 +14,7 @@ import {
   TOOL_SELECT,
 } from "../annotations/annotationTypes";
 import AnnotationToolbar from "../annotations/AnnotationToolbar";
+import AiSettingsPanel from "../components/AiSettingsPanel";
 import ChannelPanel from "../components/ChannelPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
 import VivViewer from "../viewers/VivViewer";
@@ -146,6 +151,33 @@ function buildMetadataRows(metadata) {
   ].filter((row) => row.value !== "-");
 }
 
+function guessAiMode(slideInfo) {
+  return slideInfo?.type === "ome-tiff" ? "mif" : "he";
+}
+
+function guessNuclearChannel(channels = []) {
+  if (!channels.length) return "";
+
+  const preferredNames = ["dapi", "nucleus", "nuclei", "dna", "hoechst"];
+  const match = channels.find((ch) =>
+    preferredNames.some((term) => String(ch.name || "").toLowerCase().includes(term))
+  );
+
+  if (match) return String(match.index);
+
+  const fallback = channels.find((ch) => Number(ch.index) === 2);
+  if (fallback) return String(fallback.index);
+
+  return String(channels[channels.length - 1].index);
+}
+
+function guessMembraneChannels(channels = [], nuclearChannel) {
+  return channels
+    .filter((ch) => String(ch.index) !== String(nuclearChannel))
+    .slice(0, 2)
+    .map((ch) => String(ch.index));
+}
+
 function SidebarSection({ title, subtitle, children }) {
   return (
     <section className="viewer-sidebar__section">
@@ -201,7 +233,12 @@ function ViewerInfoSection({
   );
 }
 
-function ViewerStatusSection({ slideInfo, isOme, selectedChannelsCount, detectedChannelCount }) {
+function ViewerStatusSection({
+  slideInfo,
+  isOme,
+  selectedChannelsCount,
+  detectedChannelCount,
+}) {
   return (
     <SidebarSection
       title="Workspace status"
@@ -324,12 +361,23 @@ function ViewerPage() {
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
   const [annotationColor, setAnnotationColor] = useState(DEFAULT_ANNOTATION_COLOR);
 
+  const [aiLayersBySlide, setAiLayersBySlide] = useState({});
+  const [isRunningAi, setIsRunningAi] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  const [aiMode, setAiMode] = useState("he");
+  const [aiNuclearChannel, setAiNuclearChannel] = useState("");
+  const [aiMembraneChannels, setAiMembraneChannels] = useState([]);
+  const [aiMembraneCombination, setAiMembraneCombination] = useState("max");
+
   const decodedSlidePath = decodeURIComponent(slideName || "");
+
   useEffect(() => {
     if (activeTool !== TOOL_SELECT) {
       setSelectedAnnotationId(null);
     }
   }, [activeTool]);
+
   useEffect(() => {
     fetchSlides()
       .then((data) => {
@@ -362,9 +410,20 @@ function ViewerPage() {
       .then((data) => {
         setSlideInfo(data);
 
-        if (data.type === "ome-tiff") {
-          const resolvedChannels = normalizeChannels(data);
+        const resolvedChannels = normalizeChannels(data);
+        const nextAiMode = guessAiMode(data);
+        const nextNuclearChannel = guessNuclearChannel(resolvedChannels);
+        const nextMembraneChannels = guessMembraneChannels(
+          resolvedChannels,
+          nextNuclearChannel
+        );
 
+        setAiMode(nextAiMode);
+        setAiNuclearChannel(nextNuclearChannel);
+        setAiMembraneChannels(nextMembraneChannels);
+        setAiMembraneCombination("max");
+
+        if (data.type === "ome-tiff") {
           if (resolvedChannels.length) {
             setChannelSettings(buildDefaultChannelSettings(resolvedChannels));
 
@@ -404,11 +463,21 @@ function ViewerPage() {
 
   const slideAnnotationKey = selectedSlide?.path || selectedSlide?.name || "";
   const annotations = annotationsBySlide[slideAnnotationKey] || [];
+  const aiLayers = aiLayersBySlide[slideAnnotationKey] || [];
+
   const selectedAnnotation =
     annotations.find((annotation) => annotation.id === selectedAnnotationId) || null;
 
+  const selectedRoiAnnotation =
+    selectedAnnotation && selectedAnnotation.tool === TOOL_RECT
+      ? selectedAnnotation
+      : null;
+
+  const isOme = slideInfo?.type === "ome-tiff";
+
   useEffect(() => {
     setSelectedAnnotationId(null);
+    setAiError("");
   }, [slideAnnotationKey]);
 
   useEffect(() => {
@@ -448,6 +517,20 @@ function ViewerPage() {
   const handleResetAllChannels = () => {
     if (!normalizedChannels.length) return;
     setChannelSettings(buildDefaultChannelSettings(normalizedChannels));
+  };
+
+  const handleResetAiDefaults = () => {
+    const nextAiMode = guessAiMode(slideInfo);
+    const nextNuclearChannel = guessNuclearChannel(normalizedChannels);
+    const nextMembraneChannels = guessMembraneChannels(
+      normalizedChannels,
+      nextNuclearChannel
+    );
+
+    setAiMode(nextAiMode);
+    setAiNuclearChannel(nextNuclearChannel);
+    setAiMembraneChannels(nextMembraneChannels);
+    setAiMembraneCombination("max");
   };
 
   const handleZoomIn = () => {
@@ -506,13 +589,89 @@ function ViewerPage() {
     setSelectedAnnotationId(null);
   };
 
+  const handleClearAiLayers = () => {
+    if (!slideAnnotationKey) return;
+
+    setAiLayersBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: [],
+    }));
+
+    setAiError("");
+  };
+
+  const handleRunAiOnSelectedRoi = async () => {
+    if (!selectedSlide?.path) return;
+
+    if (!selectedRoiAnnotation) {
+      setAiError("Select a rectangle ROI first.");
+      return;
+    }
+
+    if (aiMode === "mif" && !aiNuclearChannel) {
+      setAiError("Select a nuclear channel for MIF inference.");
+      return;
+    }
+
+    if (aiMode === "mif" && !aiMembraneChannels.length) {
+      setAiError("Select at least one membrane channel for MIF inference.");
+      return;
+    }
+
+    setIsRunningAi(true);
+    setAiError("");
+
+    try {
+      const payload = {
+        roi: {
+          x: selectedRoiAnnotation.x,
+          y: selectedRoiAnnotation.y,
+          width: selectedRoiAnnotation.width,
+          height: selectedRoiAnnotation.height,
+        },
+        mode: aiMode,
+        model_name: "flex",
+        checkpoint_name: "vitamin_p_flex.pth",
+        device: "cpu",
+        branches:
+          aiMode === "mif"
+            ? ["mif_nuclei", "mif_cell"]
+            : ["he_nuclei", "he_cell"],
+        batch_size: 1,
+        filter_tissue: false,
+        save_visualization: false,
+        mif_channel_config:
+          aiMode === "mif"
+            ? {
+                nuclear_channel: Number(aiNuclearChannel),
+                membrane_channel: aiMembraneChannels.map(Number),
+                membrane_combination: aiMembraneCombination || "max",
+                channel_names: Object.fromEntries(
+                  normalizedChannels.map((ch) => [ch.index, ch.name])
+                ),
+              }
+            : null,
+      };
+
+      const result = await runRoiAiSegmentation(selectedSlide.path, payload);
+
+      setAiLayersBySlide((prev) => ({
+        ...prev,
+        [slideAnnotationKey]: result.layers || [],
+      }));
+    } catch (err) {
+      console.error("ROI AI failed:", err);
+      setAiError(err.message || "ROI AI failed");
+    } finally {
+      setIsRunningAi(false);
+    }
+  };
+
   const handleSlideChange = (event) => {
     const nextSlidePath = event.target.value;
     if (!nextSlidePath || nextSlidePath === selectedSlide?.path) return;
     navigate(`/viewer/${encodeURIComponent(nextSlidePath)}`);
   };
-
-  const isOme = slideInfo?.type === "ome-tiff";
 
   if (!selectedSlide) {
     return (
@@ -625,6 +784,20 @@ function ViewerPage() {
             </SidebarSection>
           ) : null}
 
+          <AiSettingsPanel
+            isOme={isOme}
+            channels={normalizedChannels}
+            aiMode={aiMode}
+            onAiModeChange={setAiMode}
+            nuclearChannel={aiNuclearChannel}
+            onNuclearChannelChange={setAiNuclearChannel}
+            membraneChannels={aiMembraneChannels}
+            onMembraneChannelsChange={setAiMembraneChannels}
+            membraneCombination={aiMembraneCombination}
+            onMembraneCombinationChange={setAiMembraneCombination}
+            onResetDefaults={handleResetAiDefaults}
+          />
+
           <ViewerToolsSection
             onResetView={handleResetView}
             onZoomIn={handleZoomIn}
@@ -640,6 +813,9 @@ function ViewerPage() {
               <span className="viewer-badge">
                 {isOme ? "Multichannel viewer" : "Whole-slide viewer"}
               </span>
+              <span className="viewer-badge">
+                AI mode: {String(aiMode).toUpperCase()}
+              </span>
             </div>
 
             <div className="viewer-stage__toolbar-center">
@@ -650,7 +826,7 @@ function ViewerPage() {
                 color={annotationColor}
                 onColorChange={(nextColor) => {
                   setAnnotationColor(nextColor);
-                
+
                   if (selectedAnnotationId) {
                     handleUpdateAnnotation(selectedAnnotationId, { color: nextColor });
                   }
@@ -674,6 +850,23 @@ function ViewerPage() {
               <button className="viewer-stage-icon-btn" onClick={handleResetView} type="button">
                 ⌂
               </button>
+              <button
+                className="viewer-stage-icon-btn"
+                onClick={handleRunAiOnSelectedRoi}
+                type="button"
+                disabled={!selectedRoiAnnotation || isRunningAi}
+                title="Run AI on selected ROI"
+              >
+                🤖
+              </button>
+              <button
+                className="viewer-stage-icon-btn"
+                onClick={handleClearAiLayers}
+                type="button"
+                title="Clear AI overlay"
+              >
+                ✕AI
+              </button>
               <span className="viewer-badge">
                 {selectedChannels.length} active channel
                 {selectedChannels.length === 1 ? "" : "s"}
@@ -681,6 +874,15 @@ function ViewerPage() {
               <span className="viewer-badge">
                 {annotations.length} annotation{annotations.length === 1 ? "" : "s"}
               </span>
+              <span className="viewer-badge">
+                {aiLayers.length} AI layer{aiLayers.length === 1 ? "" : "s"}
+              </span>
+              {isRunningAi ? <span className="viewer-badge">AI running…</span> : null}
+              {aiError ? (
+                <span className="viewer-badge" style={{ color: "#ffb4b4" }}>
+                  {aiError}
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -696,6 +898,7 @@ function ViewerPage() {
                   selectedChannels={selectedChannels}
                   activeTool={activeTool}
                   annotations={annotations}
+                  aiLayers={aiLayers}
                   onAddAnnotation={handleAddAnnotation}
                   onUpdateAnnotation={handleUpdateAnnotation}
                   onDeleteAnnotation={handleDeleteAnnotation}
@@ -711,6 +914,7 @@ function ViewerPage() {
                   selectedChannels={selectedChannels}
                   activeTool={activeTool}
                   annotations={annotations}
+                  aiLayers={aiLayers}
                   onAddAnnotation={handleAddAnnotation}
                   onUpdateAnnotation={handleUpdateAnnotation}
                   onDeleteAnnotation={handleDeleteAnnotation}

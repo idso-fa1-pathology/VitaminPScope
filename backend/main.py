@@ -9,7 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from api.roi_ai import router as roi_ai_router
 from utils.image_utils import tint_grayscale_tile
+
 
 app = FastAPI(title="VitaminPScope API")
 
@@ -21,6 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Accept-Ranges", "Content-Length", "Content-Range", "ETag", "Last-Modified"],
 )
+
+app.include_router(roi_ai_router)
 
 DATA_DIR = "/data/sample_slides"
 

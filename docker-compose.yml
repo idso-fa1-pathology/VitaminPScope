@@ -18,7 +18,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - ./data:/data  # Mounts your slide data here
+      - ./data:/data
+    environment:
+      - AI_SERVICE_URL=http://ai_service:8001
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   ai_service:
@@ -30,4 +32,4 @@ services:
       - ./data:/data
     environment:
       - VITAMINP_DEVICE=cpu
-    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8001

@@ -1,6 +1,10 @@
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
+/* -----------------------------
+   Slide listing
+----------------------------- */
+
 export async function fetchSlides(path = "") {
   const params = new URLSearchParams();
 
@@ -21,6 +25,10 @@ export async function fetchSlides(path = "") {
   return res.json();
 }
 
+/* -----------------------------
+   Slide metadata
+----------------------------- */
+
 export async function fetchSlideMetadata(slideName) {
   const res = await fetch(
     `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/metadata`
@@ -33,6 +41,10 @@ export async function fetchSlideMetadata(slideName) {
 
   return res.json();
 }
+
+/* -----------------------------
+   Folder operations
+----------------------------- */
 
 export async function createFolder(name, parentPath = "") {
   const res = await fetch(`${BACKEND_URL}/folders`, {
@@ -91,6 +103,10 @@ export async function deleteItem(path) {
   return res.json();
 }
 
+/* -----------------------------
+   Tile + thumbnail helpers
+----------------------------- */
+
 export function buildTileUrl(slideName, z, x, y, options = {}) {
   const params = new URLSearchParams();
 
@@ -135,6 +151,10 @@ export function buildSlideSourceUrl(slideName) {
   return `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/source`;
 }
 
+/* -----------------------------
+   Viv viewer info
+----------------------------- */
+
 export async function fetchVivInfo(slideName) {
   const res = await fetch(
     `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv`
@@ -143,6 +163,41 @@ export async function fetchVivInfo(slideName) {
   if (!res.ok) {
     const message = await res.text();
     throw new Error(message || "Failed to fetch Viv info");
+  }
+
+  return res.json();
+}
+
+/* -----------------------------
+   ROI AI segmentation
+----------------------------- */
+
+export async function runRoiAiSegmentation(slideName, payload) {
+  const res = await fetch(
+    `${BACKEND_URL}/slide/${encodeURIComponent(
+      slideName
+    )}/ai/roi-segmentation`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    let message = "Failed to run ROI AI segmentation";
+
+    try {
+      const errorData = await res.json();
+      message = errorData?.detail || message;
+    } catch {
+      const text = await res.text();
+      message = text || message;
+    }
+
+    throw new Error(message);
   }
 
   return res.json();

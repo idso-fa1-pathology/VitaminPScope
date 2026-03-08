@@ -12,6 +12,7 @@ import { buildTileUrl } from "../api/slides";
 import AnnotationOverlay from "../annotations/AnnotationOverlay";
 import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel } from "./scaleBarUtils";
+import AiResultOverlay from "../overlays/AiResultOverlay";
 
 function makeTileSource(slideName, metadata, options = {}) {
   return new OpenSeadragon.TileSource({
@@ -62,6 +63,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     selectedChannels,
     activeTool = TOOL_PAN,
     annotations = [],
+    aiLayers = [],
     onAddAnnotation,
     onUpdateAnnotation,
     onDeleteAnnotation,
@@ -270,6 +272,8 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         overflow: "hidden",
       }}
     >
+      <AiResultOverlay layers={aiLayers} imageToScreen={imageToScreen} />
+
       <AnnotationOverlay
         activeTool={activeTool}
         annotations={annotations}

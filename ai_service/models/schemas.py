@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Any
 from pydantic import BaseModel, Field
 
 
@@ -54,4 +54,5 @@ class InferenceResponse(BaseModel):
     status: str
     message: str
     outputs: dict
+    raw_results: Dict[str, Any] = Field(default_factory=dict)
     stats: dict

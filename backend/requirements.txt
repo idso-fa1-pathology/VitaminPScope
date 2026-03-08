@@ -4,3 +4,4 @@ large-image
 large-image-source-openslide
 large-image-source-ometiff
 Pillow
+requests
