@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_ANNOTATION_COLOR,
   TOOL_AI,
@@ -9,17 +10,23 @@ import {
   TOOL_SELECT,
 } from "./annotationTypes";
 
-function ToolButton({ active, onClick, children, title }) {
+function ToolButton({ active, onClick, title, icon, label, disabled = false }) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
-      className={`viewer-stage-btn ${active ? "active" : ""}`}
+      disabled={disabled}
+      className={`annotation-toolbar__tool ${active ? "active" : ""}`}
     >
-      {children}
+      <span className="annotation-toolbar__icon">{icon}</span>
+      <span className="annotation-toolbar__label">{label}</span>
     </button>
   );
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function AnnotationToolbar({
@@ -31,114 +38,162 @@ function AnnotationToolbar({
   selectedAnnotation,
   onDeleteSelected,
 }) {
+  const toolbarRef = useRef(null);
+  const dragStateRef = useRef(null);
+  const [position, setPosition] = useState({ x: 14, y: 78 });
+
+  useEffect(() => {
+    const handlePointerMove = (event) => {
+      const state = dragStateRef.current;
+      const toolbarEl = toolbarRef.current;
+      if (!state || !toolbarEl) return;
+
+      const frame = toolbarEl.closest(".viewer-canvas-frame");
+      if (!frame) return;
+
+      const frameRect = frame.getBoundingClientRect();
+      const toolbarRect = toolbarEl.getBoundingClientRect();
+
+      const nextX = clamp(
+        event.clientX - frameRect.left - state.offsetX,
+        8,
+        Math.max(8, frameRect.width - toolbarRect.width - 8)
+      );
+
+      const nextY = clamp(
+        event.clientY - frameRect.top - state.offsetY,
+        8,
+        Math.max(8, frameRect.height - toolbarRect.height - 8)
+      );
+
+      setPosition({ x: nextX, y: nextY });
+    };
+
+    const handlePointerUp = () => {
+      dragStateRef.current = null;
+      document.body.style.userSelect = "";
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.userSelect = "";
+    };
+  }, []);
+
+  const handleDragStart = (event) => {
+    const toolbarEl = toolbarRef.current;
+    if (!toolbarEl) return;
+
+    const rect = toolbarEl.getBoundingClientRect();
+
+    dragStateRef.current = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+
+    document.body.style.userSelect = "none";
+  };
+
   return (
-    <>
-      <ToolButton
-        active={activeTool === TOOL_PAN}
-        onClick={() => onToolChange(TOOL_PAN)}
-        title="Pan"
+    <div
+      ref={toolbarRef}
+      className="annotation-toolbar"
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+      }}
+    >
+      <div
+        className="annotation-toolbar__drag"
+        onPointerDown={handleDragStart}
+        title="Drag toolbar"
       >
-        ✋ Pan
-      </ToolButton>
+        ···
+      </div>
 
-      <ToolButton
-        active={activeTool === TOOL_SELECT}
-        onClick={() => onToolChange(TOOL_SELECT)}
-        title="Select and edit"
-      >
-        ↖ Select
-      </ToolButton>
+      <div className="annotation-toolbar__section">
+        <ToolButton
+          active={activeTool === TOOL_PAN}
+          onClick={() => onToolChange(TOOL_PAN)}
+          title="Pan"
+          icon="✋"
+          label="Pan"
+        />
 
-      <ToolButton
-        active={activeTool === TOOL_POINT}
-        onClick={() => onToolChange(TOOL_POINT)}
-        title="Point"
-      >
-        • Dot
-      </ToolButton>
+        <ToolButton
+          active={activeTool === TOOL_SELECT}
+          onClick={() => onToolChange(TOOL_SELECT)}
+          title="Select and edit"
+          icon="↖"
+          label="Sel"
+        />
 
-      <ToolButton
-        active={activeTool === TOOL_LINE}
-        onClick={() => onToolChange(TOOL_LINE)}
-        title="Line"
-      >
-        ／ Line
-      </ToolButton>
+        <ToolButton
+          active={activeTool === TOOL_POINT}
+          onClick={() => onToolChange(TOOL_POINT)}
+          title="Point"
+          icon="•"
+          label="Dot"
+        />
 
-      <ToolButton
-        active={activeTool === TOOL_RECT}
-        onClick={() => onToolChange(TOOL_RECT)}
-        title="Rectangle"
-      >
-        ▭ Box
-      </ToolButton>
+        <ToolButton
+          active={activeTool === TOOL_LINE}
+          onClick={() => onToolChange(TOOL_LINE)}
+          title="Line"
+          icon="／"
+          label="Line"
+        />
 
-      <ToolButton
-        active={activeTool === TOOL_MEASURE}
-        onClick={() => onToolChange(TOOL_MEASURE)}
-        title="Measure"
-      >
-        📏 Measure
-      </ToolButton>
+        <ToolButton
+          active={activeTool === TOOL_RECT}
+          onClick={() => onToolChange(TOOL_RECT)}
+          title="Rectangle"
+          icon="▭"
+          label="Box"
+        />
 
-      <ToolButton
-        active={activeTool === TOOL_AI}
-        onClick={() => onToolChange(TOOL_AI)}
-        title="AI"
-      >
-        🤖 AI
-      </ToolButton>
+        <ToolButton
+          active={activeTool === TOOL_MEASURE}
+          onClick={() => onToolChange(TOOL_MEASURE)}
+          title="Measure"
+          icon="📏"
+          label="Mea"
+        />
+      </div>
 
-      <label
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "0 10px",
-          height: 36,
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.04)",
-          color: "#fff",
-          fontSize: 13,
-        }}
-        title="Annotation color"
-      >
-        <span>Color</span>
+      <div className="annotation-toolbar__divider" />
+
+      <label className="annotation-toolbar__color" title="Annotation color">
+        <span className="annotation-toolbar__color-label">Color</span>
         <input
+          className="annotation-toolbar__color-input"
           type="color"
           value={color || DEFAULT_ANNOTATION_COLOR}
           onChange={(e) => onColorChange?.(e.target.value)}
-          style={{
-            width: 26,
-            height: 26,
-            padding: 0,
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-          }}
         />
       </label>
 
-      <button
-        type="button"
-        className="viewer-stage-btn"
+      <ToolButton
+        active={false}
         onClick={onDeleteSelected}
-        disabled={!selectedAnnotation}
         title="Delete selected annotation"
-      >
-        ⌫ Delete
-      </button>
+        icon="⌫"
+        label="Del"
+        disabled={!selectedAnnotation}
+      />
 
-      <button
-        type="button"
-        className="viewer-stage-btn"
+      <ToolButton
+        active={false}
         onClick={onClear}
         title="Clear annotations"
-      >
-        🗑 Clear
-      </button>
-    </>
+        icon="🗑"
+        label="Clr"
+      />
+    </div>
   );
 }
 

@@ -178,6 +178,13 @@ function guessMembraneChannels(channels = [], nuclearChannel) {
     .map((ch) => String(ch.index));
 }
 
+function getAiBadgeTone(aiError, selectedRoiAnnotation, isRunningAi) {
+  if (aiError) return "danger";
+  if (isRunningAi) return "primary";
+  if (!selectedRoiAnnotation) return "warning";
+  return "success";
+}
+
 function SidebarSection({ title, subtitle, children }) {
   return (
     <section className="viewer-sidebar__section">
@@ -346,6 +353,80 @@ function ViewerChannelSummarySection({ channels, selectedChannels }) {
   );
 }
 
+function DisplayToggle({ checked, onChange, label }) {
+  return (
+    <label className="viewer-display-toggle">
+      <input
+        className="viewer-display-toggle__input"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="viewer-display-toggle__control" />
+      <span className="viewer-display-toggle__label">{label}</span>
+    </label>
+  );
+}
+
+function ViewerDisplaySection({
+  showTopOverlay,
+  setShowTopOverlay,
+  showAnnotationToolbar,
+  setShowAnnotationToolbar,
+  showZoomControls,
+  setShowZoomControls,
+  showBottomOverlay,
+  setShowBottomOverlay,
+  showScaleBar,
+  setShowScaleBar,
+  onShowAll,
+  onHideAll,
+}) {
+  return (
+    <SidebarSection
+      title="Viewer overlays"
+      subtitle="Show or hide floating UI without changing viewer logic"
+    >
+      <div className="viewer-display-grid">
+        <DisplayToggle
+          checked={showTopOverlay}
+          onChange={setShowTopOverlay}
+          label="Top status bar"
+        />
+        <DisplayToggle
+          checked={showAnnotationToolbar}
+          onChange={setShowAnnotationToolbar}
+          label="Annotation toolbar"
+        />
+        <DisplayToggle
+          checked={showZoomControls}
+          onChange={setShowZoomControls}
+          label="Zoom controls"
+        />
+        <DisplayToggle
+          checked={showBottomOverlay}
+          onChange={setShowBottomOverlay}
+          label="Bottom status bar"
+        />
+        <DisplayToggle
+          checked={showScaleBar}
+          onChange={setShowScaleBar}
+          label="Scale bar"
+        />
+      </div>
+
+      <div className="viewer-display-actions">
+        <button className="viewer-tool-btn" type="button" onClick={onShowAll}>
+          Show all overlays
+        </button>
+        <button className="viewer-tool-btn" type="button" onClick={onHideAll}>
+          Hide all overlays
+        </button>
+      </div>
+    </SidebarSection>
+  );
+}
+
 function ViewerPage() {
   const navigate = useNavigate();
   const { slideName } = useParams();
@@ -369,6 +450,12 @@ function ViewerPage() {
   const [aiNuclearChannel, setAiNuclearChannel] = useState("");
   const [aiMembraneChannels, setAiMembraneChannels] = useState([]);
   const [aiMembraneCombination, setAiMembraneCombination] = useState("max");
+
+  const [showTopOverlay, setShowTopOverlay] = useState(true);
+  const [showAnnotationToolbar, setShowAnnotationToolbar] = useState(true);
+  const [showZoomControls, setShowZoomControls] = useState(true);
+  const [showBottomOverlay, setShowBottomOverlay] = useState(true);
+  const [showScaleBar, setShowScaleBar] = useState(true);
 
   const decodedSlidePath = decodeURIComponent(slideName || "");
 
@@ -673,6 +760,22 @@ function ViewerPage() {
     navigate(`/viewer/${encodeURIComponent(nextSlidePath)}`);
   };
 
+  const handleShowAllOverlays = () => {
+    setShowTopOverlay(true);
+    setShowAnnotationToolbar(true);
+    setShowZoomControls(true);
+    setShowBottomOverlay(true);
+    setShowScaleBar(true);
+  };
+
+  const handleHideAllOverlays = () => {
+    setShowTopOverlay(false);
+    setShowAnnotationToolbar(false);
+    setShowZoomControls(false);
+    setShowBottomOverlay(false);
+    setShowScaleBar(false);
+  };
+
   if (!selectedSlide) {
     return (
       <div className="viewer-not-found">
@@ -758,7 +861,6 @@ function ViewerPage() {
           />
 
           <ViewerMetadataSection slideInfo={slideInfo} />
-
           {isOme ? (
             <ViewerChannelSummarySection
               channels={normalizedChannels}
@@ -804,124 +906,205 @@ function ViewerPage() {
             onZoomOut={handleZoomOut}
             onSetTool={setActiveTool}
           />
+          <ViewerDisplaySection
+            showTopOverlay={showTopOverlay}
+            setShowTopOverlay={setShowTopOverlay}
+            showAnnotationToolbar={showAnnotationToolbar}
+            setShowAnnotationToolbar={setShowAnnotationToolbar}
+            showZoomControls={showZoomControls}
+            setShowZoomControls={setShowZoomControls}
+            showBottomOverlay={showBottomOverlay}
+            setShowBottomOverlay={setShowBottomOverlay}
+            showScaleBar={showScaleBar}
+            setShowScaleBar={setShowScaleBar}
+            onShowAll={handleShowAllOverlays}
+            onHideAll={handleHideAllOverlays}
+          />
         </aside>
 
         <main className="viewer-stage">
-          <div className="viewer-stage__toolbar">
-            <div className="viewer-stage__toolbar-left">
-              <span className="viewer-badge">{slideInfo?.type || "unknown"}</span>
-              <span className="viewer-badge">
-                {isOme ? "Multichannel viewer" : "Whole-slide viewer"}
-              </span>
-              <span className="viewer-badge">
-                AI mode: {String(aiMode).toUpperCase()}
-              </span>
-            </div>
-
-            <div className="viewer-stage__toolbar-center">
-              <AnnotationToolbar
-                activeTool={activeTool}
-                onToolChange={setActiveTool}
-                onClear={handleClearAnnotations}
-                color={annotationColor}
-                onColorChange={(nextColor) => {
-                  setAnnotationColor(nextColor);
-
-                  if (selectedAnnotationId) {
-                    handleUpdateAnnotation(selectedAnnotationId, { color: nextColor });
-                  }
-                }}
-                selectedAnnotation={selectedAnnotation}
-                onDeleteSelected={() => {
-                  if (selectedAnnotationId) {
-                    handleDeleteAnnotation(selectedAnnotationId);
-                  }
-                }}
-              />
-            </div>
-
-            <div className="viewer-stage__toolbar-right">
-              <button className="viewer-stage-icon-btn" onClick={handleZoomIn} type="button">
-                ＋
-              </button>
-              <button className="viewer-stage-icon-btn" onClick={handleZoomOut} type="button">
-                －
-              </button>
-              <button className="viewer-stage-icon-btn" onClick={handleResetView} type="button">
-                ⌂
-              </button>
-              <button
-                className="viewer-stage-icon-btn"
-                onClick={handleRunAiOnSelectedRoi}
-                type="button"
-                disabled={!selectedRoiAnnotation || isRunningAi}
-                title="Run AI on selected ROI"
-              >
-                🤖
-              </button>
-              <button
-                className="viewer-stage-icon-btn"
-                onClick={handleClearAiLayers}
-                type="button"
-                title="Clear AI overlay"
-              >
-                ✕AI
-              </button>
-              <span className="viewer-badge">
-                {selectedChannels.length} active channel
-                {selectedChannels.length === 1 ? "" : "s"}
-              </span>
-              <span className="viewer-badge">
-                {annotations.length} annotation{annotations.length === 1 ? "" : "s"}
-              </span>
-              <span className="viewer-badge">
-                {aiLayers.length} AI layer{aiLayers.length === 1 ? "" : "s"}
-              </span>
-              {isRunningAi ? <span className="viewer-badge">AI running…</span> : null}
-              {aiError ? (
-                <span className="viewer-badge" style={{ color: "#ffb4b4" }}>
-                  {aiError}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
           <div className="viewer-canvas-shell">
             <div className="viewer-canvas-card">
               {!slideInfo ? (
                 <div className="viewer-empty-state">Loading slide workspace...</div>
-              ) : isOme ? (
-                <VivViewer
-                  ref={viewerControlsRef}
-                  slide={selectedSlide}
-                  slideInfo={slideInfo}
-                  selectedChannels={selectedChannels}
-                  activeTool={activeTool}
-                  annotations={annotations}
-                  aiLayers={aiLayers}
-                  onAddAnnotation={handleAddAnnotation}
-                  onUpdateAnnotation={handleUpdateAnnotation}
-                  onDeleteAnnotation={handleDeleteAnnotation}
-                  selectedAnnotationId={selectedAnnotationId}
-                  onSelectAnnotation={setSelectedAnnotationId}
-                  annotationColor={annotationColor}
-                />
               ) : (
-                <OpenSeadragonViewer
-                  ref={viewerControlsRef}
-                  slide={selectedSlide}
-                  slideInfo={slideInfo}
-                  selectedChannels={selectedChannels}
-                  activeTool={activeTool}
-                  annotations={annotations}
-                  aiLayers={aiLayers}
-                  onAddAnnotation={handleAddAnnotation}
-                  onUpdateAnnotation={handleUpdateAnnotation}
-                  onDeleteAnnotation={handleDeleteAnnotation}
-                  selectedAnnotationId={selectedAnnotationId}
-                  onSelectAnnotation={setSelectedAnnotationId}
-                  annotationColor={annotationColor}
-                />
+                <div
+                  className={[
+                    "viewer-canvas-frame",
+                    !showScaleBar ? "viewer-canvas-frame--hide-scale-bar" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {isOme ? (
+                    <VivViewer
+                      ref={viewerControlsRef}
+                      slide={selectedSlide}
+                      slideInfo={slideInfo}
+                      selectedChannels={selectedChannels}
+                      activeTool={activeTool}
+                      annotations={annotations}
+                      aiLayers={aiLayers}
+                      onAddAnnotation={handleAddAnnotation}
+                      onUpdateAnnotation={handleUpdateAnnotation}
+                      onDeleteAnnotation={handleDeleteAnnotation}
+                      selectedAnnotationId={selectedAnnotationId}
+                      onSelectAnnotation={setSelectedAnnotationId}
+                      annotationColor={annotationColor}
+                    />
+                  ) : (
+                    <OpenSeadragonViewer
+                      ref={viewerControlsRef}
+                      slide={selectedSlide}
+                      slideInfo={slideInfo}
+                      selectedChannels={selectedChannels}
+                      activeTool={activeTool}
+                      annotations={annotations}
+                      aiLayers={aiLayers}
+                      onAddAnnotation={handleAddAnnotation}
+                      onUpdateAnnotation={handleUpdateAnnotation}
+                      onDeleteAnnotation={handleDeleteAnnotation}
+                      selectedAnnotationId={selectedAnnotationId}
+                      onSelectAnnotation={setSelectedAnnotationId}
+                      annotationColor={annotationColor}
+                    />
+                  )}
+
+                  {showTopOverlay ? (
+                    <div className="viewer-overlay viewer-overlay--top">
+                      <div className="viewer-overlay__row viewer-overlay__row--compact">
+                        <span className="viewer-badge viewer-badge--sm">
+                          {slideInfo?.type || "unknown"}
+                        </span>
+                        <span className="viewer-badge viewer-badge--sm">
+                          {isOme ? "Multichannel" : "WSI"}
+                        </span>
+                        <span className="viewer-badge viewer-badge--sm">
+                          AI {String(aiMode).toUpperCase()}
+                        </span>
+                        {isRunningAi ? (
+                          <span className="viewer-badge viewer-badge--sm viewer-badge--primary viewer-badge--blink">
+                            AI running...
+                          </span>
+                        ) : null}
+                        {!selectedRoiAnnotation && !isRunningAi ? (
+                          <span className="viewer-badge viewer-badge--sm viewer-badge--warning">
+                            Select ROI
+                          </span>
+                        ) : null}
+                        {aiError ? (
+                          <span className="viewer-badge viewer-badge--sm viewer-badge--danger">
+                            {aiError}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showAnnotationToolbar ? (
+                    <div className="viewer-overlay viewer-overlay--left">
+                      <AnnotationToolbar
+                        activeTool={activeTool}
+                        onToolChange={setActiveTool}
+                        onClear={handleClearAnnotations}
+                        color={annotationColor}
+                        onColorChange={(nextColor) => {
+                          setAnnotationColor(nextColor);
+
+                          if (selectedAnnotationId) {
+                            handleUpdateAnnotation(selectedAnnotationId, { color: nextColor });
+                          }
+                        }}
+                        selectedAnnotation={selectedAnnotation}
+                        onDeleteSelected={() => {
+                          if (selectedAnnotationId) {
+                            handleDeleteAnnotation(selectedAnnotationId);
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
+                  {showZoomControls ? (
+                    <div className="viewer-overlay viewer-overlay--right">
+                      <div className="viewer-fab-stack">
+                        <button
+                          className="viewer-fab-btn"
+                          onClick={handleZoomIn}
+                          type="button"
+                          title="Zoom in"
+                        >
+                          ＋
+                        </button>
+                        <button
+                          className="viewer-fab-btn"
+                          onClick={handleZoomOut}
+                          type="button"
+                          title="Zoom out"
+                        >
+                          －
+                        </button>
+                        <button
+                          className="viewer-fab-btn"
+                          onClick={handleResetView}
+                          type="button"
+                          title="Reset view"
+                        >
+                          ⌂
+                        </button>
+                        <button
+                          className="viewer-fab-btn"
+                          onClick={handleRunAiOnSelectedRoi}
+                          type="button"
+                          disabled={!selectedRoiAnnotation || isRunningAi}
+                          title="Run AI on selected ROI"
+                        >
+                          🤖
+                        </button>
+                        <button
+                          className="viewer-fab-btn"
+                          onClick={handleClearAiLayers}
+                          type="button"
+                          title="Clear AI overlay"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showBottomOverlay ? (
+                    <div className="viewer-overlay viewer-overlay--bottom">
+                      <div className="viewer-overlay__row viewer-overlay__row--bottom">
+                        <span className="viewer-badge">
+                          {selectedChannels.length} active channel
+                          {selectedChannels.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="viewer-badge">
+                          {annotations.length} annotation{annotations.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="viewer-badge">
+                          {aiLayers.length} AI layer{aiLayers.length === 1 ? "" : "s"}
+                        </span>
+                        <span
+                          className={`viewer-badge viewer-badge--${getAiBadgeTone(
+                            aiError,
+                            selectedRoiAnnotation,
+                            isRunningAi
+                          )}`}
+                        >
+                          {aiError
+                            ? "AI error"
+                            : isRunningAi
+                              ? "AI busy"
+                              : selectedRoiAnnotation
+                                ? "ROI selected"
+                                : "ROI required"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               )}
             </div>
           </div>
