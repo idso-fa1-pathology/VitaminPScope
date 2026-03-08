@@ -1,0 +1,20 @@
+# macOS
+**/.DS_Store
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Model checkpoints
+ai_service/checkpoints/
+
+# Output files
+ai_service/outputs/
+
+# Large data files
+data/sample_slides/*.svs
+data/sample_slides/*.tiff
+data/sample_slides/*.ome.tiff
+data/sample_slides/*.png
+data/sample_slides/*.ng
