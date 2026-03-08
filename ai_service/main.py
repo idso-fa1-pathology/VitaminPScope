@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Vitamin-P Inference Service")
+from api.routes_health import router as health_router
+from api.routes_inference import router as inference_router
+
+app = FastAPI(title="VitaminP Inference Service", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -11,11 +14,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def health_check():
-    return {"status": "AI Service Online", "model": "Vitamin-P (Pending Load)"}
-
-@app.post("/predict/vitamin-p")
-def run_inference():
-    # Later, this will accept an image array and return polygon coordinates
-    return {"segmentation_masks": "coming soon"}
+app.include_router(health_router)
+app.include_router(inference_router, prefix="/inference")

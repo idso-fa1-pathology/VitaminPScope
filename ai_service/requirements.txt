@@ -1,3 +1,16 @@
 fastapi
-uvicorn
-# torch, torchvision, numpy will go here when we load the model
+uvicorn[standard]
+pydantic
+numpy<2
+opencv-python-headless
+pillow
+tifffile
+openslide-python
+torch
+torchvision
+tqdm
+shapely
+scikit-image
+pandas
+pyarrow
+timm

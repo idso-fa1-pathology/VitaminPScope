@@ -35,7 +35,6 @@ function SlideManagerPage() {
       setError("");
 
       const data = await fetchSlides(path);
-
       setSlides(data.slides || []);
       setFolders(data.folders || []);
     } catch (err) {
@@ -55,13 +54,12 @@ function SlideManagerPage() {
       setCurrentPath(item.path || item.name);
       return;
     }
-  
+
     navigate(`/viewer/${encodeURIComponent(item.path || item.name)}`);
   };
 
   const handleGoBack = () => {
     if (!currentPath) return;
-
     const parts = currentPath.split("/").filter(Boolean);
     parts.pop();
     setCurrentPath(parts.join("/"));
@@ -167,19 +165,27 @@ function SlideManagerPage() {
   return (
     <div className="slide-manager-page">
       <div className="slide-manager-shell">
-        <section className="manager-topbar">
-          <div>
+        <section className="hero-panel">
+          <div className="hero-panel__content">
+            <div className="manager-eyebrow">Digital Pathology Workspace</div>
             <h1 className="app-title">VitaminPScope</h1>
-            <div className="manager-eyebrow">File Manager</div>
-            <div className="manager-path-row">
-              <div className="manager-path">{currentPath || "Root"}</div>
+            <p className="hero-panel__subtitle">
+              Manage pathology slides, organize folders, and open whole-slide
+              images in a cleaner, faster workspace.
+            </p>
+
+            <div className="hero-panel__meta">
+              <span className="hero-badge">Workspace</span>
+              <span className="hero-badge">
+                {currentPath ? `Path: ${currentPath}` : "Path: Root"}
+              </span>
             </div>
           </div>
 
-          <div className="toolbar-actions">
+          <div className="hero-panel__actions">
             {currentPath ? (
               <button className="secondary-btn" onClick={handleGoBack}>
-                Back
+                ← Back
               </button>
             ) : null}
 
@@ -187,7 +193,7 @@ function SlideManagerPage() {
               className="primary-btn"
               onClick={() => setCreateFolderOpen(true)}
             >
-              New Folder
+              + New Folder
             </button>
 
             <button
@@ -199,9 +205,9 @@ function SlideManagerPage() {
           </div>
         </section>
 
-        <section className="slide-manager-stats slide-manager-stats--compact">
+        <section className="slide-manager-stats">
           <div className="stat-tile">
-            <div className="stat-tile__label">Items</div>
+            <div className="stat-tile__label">Total items</div>
             <div className="stat-tile__value">{items.length}</div>
           </div>
 
@@ -224,16 +230,16 @@ function SlideManagerPage() {
         <section className="toolbar-card">
           <div className="manager-header-row">
             <div className="search-box">
-              <span className="search-box__icon">🔎</span>
+              <span className="search-box__icon">⌕</span>
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search slides and folders..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="filter-pill-group">
+            <div className="toolbar-inline-actions">
               <button
                 className={`filter-pill ${typeFilter === "all" ? "active" : ""}`}
                 onClick={() => setTypeFilter("all")}
@@ -268,17 +274,23 @@ function SlideManagerPage() {
 
         <section className="content-card">
           <div className="content-card__top">
-            <h2 className="content-card__title">Items</h2>
-            <div className="content-card__subtitle">
+            <div>
+              <h2 className="content-card__title">Library</h2>
+              <p className="content-card__subtitle">
+                Browse your folders and pathology slide files
+              </p>
+            </div>
+
+            <div className="content-summary-chip">
               {loading ? "Loading..." : `${filteredItems.length} shown`}
             </div>
           </div>
 
           {error ? (
-            <div className="empty-state" style={{ marginBottom: 16 }}>
+            <div className="empty-state empty-state--error">
               <h3 className="empty-state__title">Something went wrong</h3>
               <p className="empty-state__text">{error}</p>
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 16 }}>
                 <button className="secondary-btn" onClick={() => setError("")}>
                   Dismiss
                 </button>
@@ -286,11 +298,13 @@ function SlideManagerPage() {
             </div>
           ) : null}
 
-          {filteredItems.length === 0 ? (
+          {!loading && filteredItems.length === 0 ? (
             <div className="empty-state">
+              <div className="empty-state__icon">🗂️</div>
               <h3 className="empty-state__title">No items found</h3>
               <p className="empty-state__text">
-                Try a different search or filter.
+                Try a different search, change the filter, or create a new
+                folder to get started.
               </p>
             </div>
           ) : (

@@ -14,21 +14,24 @@ function getItemLabel(item) {
   return item.type || "File";
 }
 
+function getItemDescription(item) {
+  if (item.kind === "folder") return "Organize related slide assets";
+  if (item.type === "ome-tiff") return "High-resolution OME-TIFF slide";
+  if (item.type === "svs") return "Whole-slide SVS pathology image";
+  return "Image file";
+}
+
 function FileManagerCard({ item, onOpen, onRename, onDelete }) {
   const isFolder = item.kind === "folder";
-
-  const handleCardClick = () => {
-    onOpen(item);
-  };
 
   return (
     <div
       className={`slide-card ${isFolder ? "slide-card--folder" : ""}`}
-      onClick={handleCardClick}
+      onClick={() => onOpen(item)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !isFolder) {
+        if (e.key === "Enter" || e.key === " ") {
           onOpen(item);
         }
       }}
@@ -49,10 +52,14 @@ function FileManagerCard({ item, onOpen, onRename, onDelete }) {
           {item.name}
         </div>
 
+        <div className="slide-card__description">
+          {getItemDescription(item)}
+        </div>
+
         <div className="slide-card__meta">
           <span className="slide-type-badge">{getItemLabel(item)}</span>
           <span className="slide-card__action">
-            {isFolder ? "Manage" : "Open"}
+            {isFolder ? "Open folder" : "Open viewer"}
           </span>
         </div>
       </div>
