@@ -15,6 +15,7 @@ ai_service/outputs/
 # Large data files
 data/sample_slides/*.svs
 data/sample_slides/*.tiff
+data/sample_slides/*.tif
 data/sample_slides/*.ome.tiff
 data/sample_slides/*.png
 data/sample_slides/*.ng
