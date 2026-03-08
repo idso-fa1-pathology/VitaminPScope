@@ -515,7 +515,7 @@ function ViewerPage() {
             setChannelSettings(buildDefaultChannelSettings(resolvedChannels));
 
             const defaultEnabled = resolvedChannels
-              .slice(0, Math.min(6, resolvedChannels.length))
+              .slice(0, Math.min(4, resolvedChannels.length))
               .map((channel) => channel.index);
 
             setEnabledChannelIndexes(defaultEnabled);

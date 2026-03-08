@@ -501,20 +501,30 @@ const VivViewer = forwardRef(function VivViewer(
 
         setContrastByChannel(buildPerChannelContrastMap(normalizedChannels, fastDefault));
 
-        const contrastPromise = estimateContrastFromThumbnail(thumbnailUrl, dtype)
-          .then((estimatedLimits) => {
-            if (cancelled || startupSessionRef.current !== mySession) return;
-
-            setContrastByChannel(buildPerChannelContrastMap(normalizedChannels, estimatedLimits));
-          })
-          .catch(() => {})
-          .finally(() => {
-            if (cancelled || startupSessionRef.current !== mySession) return;
-            contrastReadyRef.current = true;
+        const contrastPromise = new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              estimateContrastFromThumbnail(thumbnailUrl, dtype)
+                .then((estimatedLimits) => {
+                  if (cancelled || startupSessionRef.current !== mySession) return;
+        
+                  setContrastByChannel(
+                    buildPerChannelContrastMap(normalizedChannels, estimatedLimits)
+                  );
+                })
+                .catch(() => {})
+                .finally(() => {
+                  if (cancelled || startupSessionRef.current !== mySession) return;
+                  contrastReadyRef.current = true;
+                  resolve();
+                });
+            }, 150);
           });
-
+        });
+        
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const loaded = await loadOmeTiff(sourceUrl);
-
+        
         if (cancelled || startupSessionRef.current !== mySession) return;
 
         const loaderArray = loaded?.data;
@@ -533,11 +543,8 @@ const VivViewer = forwardRef(function VivViewer(
         setDeckInitialViewState(initial);
         setViewState(initial);
 
-        await contrastPromise;
-
-        if (cancelled || startupSessionRef.current !== mySession) return;
-
         setLoading(false);
+        
       } catch (e) {
         if (cancelled || startupSessionRef.current !== mySession) return;
 
@@ -799,7 +806,7 @@ const VivViewer = forwardRef(function VivViewer(
         </div>
       )}
 
-{showMiniMap && (
+      {showMiniMap && (
         <div
           style={{
             position: "absolute",
