@@ -9,6 +9,18 @@ import {
   TOOL_SELECT,
 } from "./annotationTypes";
 
+function createAnnotationId() {
+  if (
+    typeof globalThis !== "undefined" &&
+    globalThis.crypto &&
+    typeof globalThis.crypto.randomUUID === "function"
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `ann-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function clampNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -601,7 +613,7 @@ function AnnotationOverlay({
 
     if (activeTool === TOOL_POINT) {
       onAddAnnotation({
-        id: crypto.randomUUID(),
+        id: createAnnotationId(),
         tool: TOOL_POINT,
         x: imagePoint.x,
         y: imagePoint.y,
@@ -743,7 +755,7 @@ function AnnotationOverlay({
       const pixelLength = distance(draft.start, draft.end);
       if (pixelLength >= 2) {
         onAddAnnotation({
-          id: crypto.randomUUID(),
+          id: createAnnotationId(),
           tool: draft.tool,
           start: draft.start,
           end: draft.end,
@@ -759,7 +771,7 @@ function AnnotationOverlay({
     if (draft.tool === TOOL_RECT) {
       if (draft.width >= 2 && draft.height >= 2) {
         onAddAnnotation({
-          id: crypto.randomUUID(),
+          id: createAnnotationId(),
           tool: TOOL_RECT,
           x: draft.x,
           y: draft.y,

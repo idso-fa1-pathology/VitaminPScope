@@ -32,7 +32,7 @@ class DINOv2Backbone(nn.Module):
         
         self.dinov2 = timm.create_model(
             config['name'],
-            pretrained=True,
+            pretrained=False,
             dynamic_img_size=True
         )
         
