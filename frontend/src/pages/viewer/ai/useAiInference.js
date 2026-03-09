@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { runRoiAiSegmentation } from "../../../api/slides";
+import { buildDefaultLayerDisplay, getLayerKind } from "../../../ai/aiOverlayUtils";
 import {
   guessAiMode,
   guessMembraneChannels,
@@ -25,6 +26,26 @@ function buildChannelNameMap(channels = []) {
   return Object.fromEntries(channels.map((ch) => [ch.index, ch.name]));
 }
 
+function enrichLayersWithDisplay(layers = []) {
+  return layers.map((layer) => ({
+    ...layer,
+    display: {
+      ...buildDefaultLayerDisplay(layer),
+    },
+  }));
+}
+
+function buildResultDisplaySummary(layers = []) {
+  const hasNuclei = layers.some((layer) => getLayerKind(layer) === "nuclei");
+  const hasCells = layers.some((layer) => getLayerKind(layer) === "cell");
+
+  return {
+    showNuclei: hasNuclei,
+    showCells: hasCells,
+    showFill: false,
+  };
+}
+
 export function useAiInference({
   slideInfo,
   selectedSlide,
@@ -46,6 +67,7 @@ export function useAiInference({
   const [aiError, setAiError] = useState("");
 
   const [resultsBySlide, setResultsBySlide] = useState({});
+  const [activeResultIdBySlide, setActiveResultIdBySlide] = useState({});
 
   const selectedModel = useMemo(() => {
     return (
@@ -54,6 +76,7 @@ export function useAiInference({
   }, [availableModels, selectedModelId]);
 
   const results = resultsBySlide[slideAnnotationKey] || [];
+  const activeResultId = activeResultIdBySlide[slideAnnotationKey] || null;
 
   useEffect(() => {
     const nextAiMode = guessAiMode(slideInfo);
@@ -69,6 +92,14 @@ export function useAiInference({
     setAiMembraneCombination("max");
     setAiError("");
   }, [slideInfo, normalizedChannels, slideAnnotationKey]);
+
+  useEffect(() => {
+    if (!slideAnnotationKey) return;
+    const activeItem = results.find((item) => item.id === activeResultId);
+    if (activeItem) {
+      onApplyLayers?.(activeItem.layers || []);
+    }
+  }, [results, activeResultId, slideAnnotationKey, onApplyLayers]);
 
   const handleResetAiDefaults = () => {
     const nextAiMode = guessAiMode(slideInfo);
@@ -92,20 +123,116 @@ export function useAiInference({
       ...prev,
       [slideAnnotationKey]: [],
     }));
+
+    setActiveResultIdBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: null,
+    }));
+
+    onApplyLayers?.([]);
   };
 
   const removeResult = (resultId) => {
     if (!slideAnnotationKey) return;
 
+    const nextResults = (resultsBySlide[slideAnnotationKey] || []).filter(
+      (item) => item.id !== resultId
+    );
+
     setResultsBySlide((prev) => ({
       ...prev,
-      [slideAnnotationKey]: (prev[slideAnnotationKey] || []).filter(
-        (item) => item.id !== resultId
+      [slideAnnotationKey]: nextResults,
+    }));
+
+    const wasActive = activeResultIdBySlide[slideAnnotationKey] === resultId;
+
+    if (wasActive) {
+      const nextActive = nextResults[0]?.id || null;
+
+      setActiveResultIdBySlide((prev) => ({
+        ...prev,
+        [slideAnnotationKey]: nextActive,
+      }));
+
+      const nextActiveItem = nextResults[0];
+      onApplyLayers?.(nextActiveItem?.layers || []);
+    }
+  };
+
+  const updateResult = (resultId, updater) => {
+    if (!slideAnnotationKey) return;
+
+    setResultsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: (prev[slideAnnotationKey] || []).map((item) =>
+        item.id === resultId ? updater(item) : item
       ),
     }));
   };
 
+  const updateResultDisplay = (resultId, patch) => {
+    updateResult(resultId, (item) => {
+      const nextDisplay = {
+        ...(item.display || {}),
+        ...patch,
+      };
+
+      const nextLayers = (item.layers || []).map((layer) => {
+        const kind = getLayerKind(layer);
+        const isNuclei = kind === "nuclei";
+        const isCell = kind === "cell";
+
+        return {
+          ...layer,
+          display: {
+            ...(layer.display || {}),
+            visible: isNuclei
+              ? nextDisplay.showNuclei !== false
+              : isCell
+                ? nextDisplay.showCells !== false
+                : true,
+            showFill: nextDisplay.showFill === true,
+          },
+        };
+      });
+
+      return {
+        ...item,
+        display: nextDisplay,
+        layers: nextLayers,
+      };
+    });
+  };
+
+  const updateResultLayerStyle = (resultId, layerKind, patch) => {
+    updateResult(resultId, (item) => {
+      const nextLayers = (item.layers || []).map((layer) => {
+        if (getLayerKind(layer) !== layerKind) return layer;
+
+        return {
+          ...layer,
+          display: {
+            ...(layer.display || {}),
+            ...patch,
+          },
+        };
+      });
+
+      return {
+        ...item,
+        layers: nextLayers,
+      };
+    });
+  };
+
   const applyResultLayers = (resultItem) => {
+    if (!slideAnnotationKey) return;
+
+    setActiveResultIdBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: resultItem?.id || null,
+    }));
+
     onApplyLayers?.(resultItem?.layers || []);
   };
 
@@ -168,7 +295,7 @@ export function useAiInference({
         selectedSlide.sourceId || currentSourceId
       );
 
-      const nextLayers = result?.layers || [];
+      const nextLayers = enrichLayersWithDisplay(result?.layers || []);
       const nextResult = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         createdAt: new Date().toISOString(),
@@ -179,14 +306,22 @@ export function useAiInference({
         status: "success",
         layerCount: nextLayers.length,
         layers: nextLayers,
+        metrics: result?.stats?.result_metrics || {},
+        branchStats: result?.stats?.branches || {},
+        display: buildResultDisplaySummary(nextLayers),
       };
-
-      onApplyLayers?.(nextLayers);
 
       setResultsBySlide((prev) => ({
         ...prev,
         [slideAnnotationKey]: [nextResult, ...(prev[slideAnnotationKey] || [])],
       }));
+
+      setActiveResultIdBySlide((prev) => ({
+        ...prev,
+        [slideAnnotationKey]: nextResult.id,
+      }));
+
+      onApplyLayers?.(nextLayers);
     } catch (err) {
       const message = err?.message || "ROI AI failed";
       setAiError(message);
@@ -202,6 +337,8 @@ export function useAiInference({
         error: message,
         layerCount: 0,
         layers: [],
+        metrics: {},
+        display: {},
       };
 
       setResultsBySlide((prev) => ({
@@ -233,6 +370,8 @@ export function useAiInference({
     clearResults,
     removeResult,
     applyResultLayers,
+    updateResultDisplay,
+    updateResultLayerStyle,
     runInference,
   };
 }

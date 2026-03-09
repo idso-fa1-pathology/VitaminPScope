@@ -119,6 +119,8 @@ function ViewerPage() {
     clearResults,
     removeResult,
     applyResultLayers,
+    updateResultDisplay,
+    updateResultLayerStyle,
     runInference,
   } = useAiInference({
     slideInfo,
@@ -465,6 +467,8 @@ function ViewerPage() {
                     onApplyResult={applyResultLayers}
                     onRemoveResult={removeResult}
                     onClearResults={clearResults}
+                    onUpdateResultDisplay={updateResultDisplay}
+                    onUpdateResultLayerStyle={updateResultLayerStyle}
                   />
 
                   {showBottomOverlay ? (

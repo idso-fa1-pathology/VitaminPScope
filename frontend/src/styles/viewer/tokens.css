@@ -1,0 +1,101 @@
+:root {
+  --vp-primary: #3b82f6;
+  --vp-primary-soft: rgba(59, 130, 246, 0.16);
+  --vp-success: #22c55e;
+  --vp-success-soft: rgba(34, 197, 94, 0.16);
+  --vp-warning: #f59e0b;
+  --vp-warning-soft: rgba(245, 158, 11, 0.16);
+  --vp-danger: #ef4444;
+  --vp-danger-soft: rgba(239, 68, 68, 0.16);
+  --vp-glass-blur: blur(16px);
+}
+
+.viewer-page--dark {
+  --vp-bg: #08111d;
+  --vp-bg-2: #0c1727;
+  --vp-surface: rgba(12, 22, 36, 0.82);
+  --vp-surface-2: rgba(16, 27, 43, 0.86);
+  --vp-surface-3: rgba(24, 36, 56, 0.92);
+  --vp-surface-strong: rgba(8, 15, 26, 0.96);
+  --vp-border: rgba(148, 163, 184, 0.16);
+  --vp-border-strong: rgba(148, 163, 184, 0.26);
+  --vp-text: #e7eef8;
+  --vp-text-soft: #c3d0df;
+  --vp-text-muted: #8ea1ba;
+  --vp-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+  --vp-page-gradient:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.06), transparent 22%),
+    linear-gradient(180deg, #07111c 0%, #091321 100%);
+  --vp-topbar-bg: rgba(8, 15, 26, 0.82);
+  --vp-sidebar-bg: linear-gradient(
+    180deg,
+    rgba(10, 17, 30, 0.92) 0%,
+    rgba(8, 14, 26, 0.96) 100%
+  );
+  --vp-card-bg: #040912;
+  --vp-frame-bg: #040912;
+  --vp-stage-bg: #050b14;
+  --vp-chip-bg: rgba(255, 255, 255, 0.04);
+  --vp-chip-icon-color: #9ec5ff;
+  --vp-panel-bg: rgba(255, 255, 255, 0.035);
+  --vp-panel-header-bg: rgba(255, 255, 255, 0.025);
+  --vp-soft-bg: rgba(255, 255, 255, 0.03);
+  --vp-soft-bg-2: rgba(255, 255, 255, 0.045);
+  --vp-soft-bg-3: rgba(255, 255, 255, 0.05);
+  --vp-overlay-bg: rgba(8, 15, 26, 0.58);
+  --vp-overlay-bg-compact: rgba(8, 15, 26, 0.48);
+  --vp-fab-bg: rgba(8, 15, 26, 0.62);
+  --vp-switch-bg: rgba(255, 255, 255, 0.05);
+  --vp-switch-knob: #dbe7f4;
+  --vp-switch-knob-active: #ffffff;
+  --vp-not-found-bg: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  --vp-strong-text: #ffffff;
+}
+
+.viewer-page--light {
+  --vp-bg: #f4f7fb;
+  --vp-bg-2: #eaf0f7;
+  --vp-surface: rgba(255, 255, 255, 0.88);
+  --vp-surface-2: rgba(255, 255, 255, 0.94);
+  --vp-surface-3: rgba(248, 250, 252, 0.98);
+  --vp-surface-strong: rgba(255, 255, 255, 0.98);
+  --vp-border: rgba(15, 23, 42, 0.1);
+  --vp-border-strong: rgba(15, 23, 42, 0.18);
+  --vp-text: #162033;
+  --vp-text-soft: #334155;
+  --vp-text-muted: #64748b;
+  --vp-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+  --vp-page-gradient:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.1), transparent 24%),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.05), transparent 22%),
+    linear-gradient(180deg, #f8fbff 0%, #edf3f9 100%);
+  --vp-topbar-bg: rgba(255, 255, 255, 0.88);
+  --vp-sidebar-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(245, 248, 252, 0.98) 100%
+  );
+  --vp-card-bg: #ffffff;
+  --vp-frame-bg: #edf2f7;
+  --vp-stage-bg: #eef3f8;
+  --vp-chip-bg: rgba(15, 23, 42, 0.03);
+  --vp-chip-icon-color: #2563eb;
+  --vp-panel-bg: rgba(255, 255, 255, 0.92);
+  --vp-panel-header-bg: rgba(15, 23, 42, 0.025);
+  --vp-soft-bg: rgba(15, 23, 42, 0.025);
+  --vp-soft-bg-2: rgba(15, 23, 42, 0.04);
+  --vp-soft-bg-3: rgba(15, 23, 42, 0.05);
+  --vp-overlay-bg: rgba(255, 255, 255, 0.74);
+  --vp-overlay-bg-compact: rgba(255, 255, 255, 0.68);
+  --vp-fab-bg: rgba(255, 255, 255, 0.82);
+  --vp-switch-bg: rgba(15, 23, 42, 0.08);
+  --vp-switch-knob: #ffffff;
+  --vp-switch-knob-active: #ffffff;
+  --vp-not-found-bg: linear-gradient(180deg, #f8fbff 0%, #edf3f9 100%);
+  --vp-strong-text: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}

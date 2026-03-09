@@ -7,7 +7,10 @@ from models.ai_schemas import (
     RoiSegmentationResponse,
 )
 from services.ai_client import AiServiceError, run_roi_segmentation
-from services.ai_result_mapper import normalize_roi_result_to_layers
+from services.ai_result_mapper import (
+    build_result_metrics,
+    normalize_roi_result_to_layers,
+)
 from services.roi_crop_service import cleanup_temp_patch, crop_roi_to_temp_patch
 
 router = APIRouter()
@@ -24,9 +27,6 @@ def _resolve_default_branches(mode: str, branches: list[str]) -> list[str]:
 
 
 def _normalize_magnification(raw_mag, mpp):
-    """
-    VitaminP supports only magnification 20 or 40.
-    """
     if raw_mag is not None:
         try:
             mag = float(raw_mag)
@@ -48,14 +48,6 @@ def _normalize_magnification(raw_mag, mpp):
 
 
 def _extract_slide_resolution(slide_path: str):
-    """
-    Detect slide MPP and magnification.
-
-    Rules:
-    - MPP < 0.2125 → clamp to 0.2125
-    - MPP >= 0.2125 → keep original
-    - Magnification normalized to 20 or 40
-    """
     default_mpp = 0.2125
     default_mag = 40
 
@@ -84,7 +76,6 @@ def _extract_slide_resolution(slide_path: str):
         if mpp is None:
             mpp = default_mpp
 
-        # ---- Clamp extremely high resolution ----
         if mpp < MIN_SUPPORTED_MPP:
             mpp = MIN_SUPPORTED_MPP
 
@@ -108,8 +99,6 @@ def run_roi_ai_segmentation(
         from main import get_slide_path
 
         slide_path = get_slide_path(source_id, filename)
-
-        # --- Detect slide resolution ---
         auto_mpp, auto_mag = _extract_slide_resolution(slide_path)
 
         patch_path, crop_meta = crop_roi_to_temp_patch(
@@ -159,6 +148,7 @@ def run_roi_ai_segmentation(
             roi_y=crop_meta["y"],
         )
 
+        result_metrics = build_result_metrics(layers_data)
         layers = [RoiSegmentationLayer(**layer) for layer in layers_data]
 
         return RoiSegmentationResponse(
@@ -169,6 +159,7 @@ def run_roi_ai_segmentation(
             layers=layers,
             stats={
                 "source_id": source_id,
+                "result_metrics": result_metrics,
                 "branches": {
                     layer.branch: layer.stats for layer in layers
                 },

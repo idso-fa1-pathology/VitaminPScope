@@ -26,6 +26,8 @@ function AiPanel({
   onApplyResult,
   onRemoveResult,
   onClearResults,
+  onUpdateResultDisplay,
+  onUpdateResultLayerStyle,
 }) {
   if (!isOpen) return null;
 
@@ -188,6 +190,8 @@ function AiPanel({
           onApplyResult={onApplyResult}
           onRemoveResult={onRemoveResult}
           onClearResults={onClearResults}
+          onUpdateResultDisplay={onUpdateResultDisplay}
+          onUpdateResultLayerStyle={onUpdateResultLayerStyle}
         />
       </div>
     </div>

@@ -1,8 +1,25 @@
-import { geometryToSvgShapes, getAiLayerStroke, isFeatureCollection } from "../ai/aiOverlayUtils";
+import {
+  geometryToSvgShapes,
+  getAiLayerFill,
+  getAiLayerFillOpacity,
+  getAiLayerStroke,
+  getAiLayerStrokeOpacity,
+  getAiLayerStrokeWidth,
+  isFeatureCollection,
+} from "../ai/aiOverlayUtils";
 
-function renderFeature(feature, imageToScreen, stroke, layerOpacity, keyPrefix) {
+function renderFeature(feature, imageToScreen, layer, keyPrefix) {
   const geometry = feature?.geometry;
   const shapes = geometryToSvgShapes(geometry, imageToScreen);
+
+  const showStroke = layer?.display?.showStroke !== false;
+  const showFill = layer?.display?.showFill === true;
+
+  const stroke = getAiLayerStroke(layer);
+  const fill = getAiLayerFill(layer);
+  const strokeOpacity = getAiLayerStrokeOpacity(layer);
+  const fillOpacity = getAiLayerFillOpacity(layer);
+  const strokeWidth = getAiLayerStrokeWidth(layer);
 
   return shapes.map((shape, index) => {
     const key = `${keyPrefix}-${shape.key || index}`;
@@ -15,7 +32,7 @@ function renderFeature(feature, imageToScreen, stroke, layerOpacity, keyPrefix) 
           cy={shape.cy}
           r={3}
           fill={stroke}
-          opacity={layerOpacity}
+          opacity={strokeOpacity}
           pointerEvents="none"
         />
       );
@@ -26,10 +43,11 @@ function renderFeature(feature, imageToScreen, stroke, layerOpacity, keyPrefix) 
         <polygon
           key={key}
           points={shape.points}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={1.5}
-          opacity={layerOpacity}
+          fill={showFill ? fill : "none"}
+          fillOpacity={showFill ? fillOpacity : 0}
+          stroke={showStroke ? stroke : "none"}
+          strokeWidth={showStroke ? strokeWidth : 0}
+          opacity={1}
           vectorEffect="non-scaling-stroke"
           pointerEvents="none"
         />
@@ -42,9 +60,9 @@ function renderFeature(feature, imageToScreen, stroke, layerOpacity, keyPrefix) 
           key={key}
           points={shape.points}
           fill="none"
-          stroke={stroke}
-          strokeWidth={1.5}
-          opacity={layerOpacity}
+          stroke={showStroke ? stroke : "none"}
+          strokeWidth={showStroke ? strokeWidth : 0}
+          opacity={strokeOpacity}
           vectorEffect="non-scaling-stroke"
           pointerEvents="none"
         />
@@ -60,6 +78,7 @@ function AiResultOverlay({ layers = [], imageToScreen }) {
     (layer) =>
       layer &&
       layer.visible !== false &&
+      layer?.display?.visible !== false &&
       isFeatureCollection(layer.feature_collection)
   );
 
@@ -77,18 +96,15 @@ function AiResultOverlay({ layers = [], imageToScreen }) {
       }}
     >
       {visibleLayers.map((layer) => {
-        const stroke = getAiLayerStroke(layer);
-        const opacity = layer.opacity ?? 1;
         const features = layer.feature_collection?.features || [];
 
         return (
-          <g key={layer.id || layer.branch || stroke}>
+          <g key={layer.id || layer.branch || layer.color || "ai-layer"}>
             {features.map((feature, featureIndex) =>
               renderFeature(
                 feature,
                 imageToScreen,
-                stroke,
-                opacity,
+                layer,
                 `${layer.id || layer.branch}-feature-${featureIndex}`
               )
             )}
