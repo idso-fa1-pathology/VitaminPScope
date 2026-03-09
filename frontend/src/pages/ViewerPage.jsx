@@ -92,6 +92,22 @@ function getBandCount(slideInfo) {
   return 0;
 }
 
+function isMultichannelSlide(slideInfo) {
+  const slideType = String(slideInfo?.type || "").toLowerCase();
+
+  if (slideType !== "ome-tiff") {
+    return false;
+  }
+
+  const bandCount = getBandCount(slideInfo);
+  if (bandCount > 3) return true;
+
+  const channels = Array.isArray(slideInfo?.channels) ? slideInfo.channels : [];
+  if (channels.length > 3) return true;
+
+  return false;
+}
+
 function normalizeChannels(slideInfo) {
   if (Array.isArray(slideInfo?.channels) && slideInfo.channels.length) {
     return slideInfo.channels.map((channel, position) => {
@@ -152,7 +168,7 @@ function buildMetadataRows(metadata) {
 }
 
 function guessAiMode(slideInfo) {
-  return slideInfo?.type === "ome-tiff" ? "mif" : "he";
+  return isMultichannelSlide(slideInfo) ? "mif" : "he";
 }
 
 function guessNuclearChannel(channels = []) {
@@ -216,14 +232,14 @@ function KvList({ rows }) {
 function ViewerInfoSection({
   selectedSlide,
   slideInfo,
-  isOme,
+  useVivViewer,
   selectedChannelsCount,
   detectedChannelCount,
 }) {
   const rows = [
     { label: "Slide name", value: formatValue(selectedSlide?.name) },
     { label: "Format", value: formatValue(slideInfo?.type) },
-    { label: "Viewer engine", value: isOme ? "Viv" : "OpenSeadragon" },
+    { label: "Viewer engine", value: useVivViewer ? "Viv" : "OpenSeadragon" },
     {
       label: "Channels",
       value: `${detectedChannelCount} total • ${selectedChannelsCount} active`,
@@ -242,7 +258,7 @@ function ViewerInfoSection({
 
 function ViewerStatusSection({
   slideInfo,
-  isOme,
+  isMultichannel,
   selectedChannelsCount,
   detectedChannelCount,
 }) {
@@ -254,7 +270,7 @@ function ViewerStatusSection({
       <div className="viewer-status-grid">
         <div className="viewer-status-card">
           <div className="viewer-status-card__label">Mode</div>
-          <div className="viewer-status-card__value">{isOme ? "Multichannel" : "WSI"}</div>
+          <div className="viewer-status-card__value">{isMultichannel ? "Multichannel" : "WSI"}</div>
         </div>
 
         <div className="viewer-status-card">
@@ -504,13 +520,14 @@ function ViewerPage() {
           resolvedChannels,
           nextNuclearChannel
         );
+        const shouldUseViv = isMultichannelSlide(data);
 
         setAiMode(nextAiMode);
         setAiNuclearChannel(nextNuclearChannel);
         setAiMembraneChannels(nextMembraneChannels);
         setAiMembraneCombination("max");
 
-        if (data.type === "ome-tiff") {
+        if (shouldUseViv) {
           if (resolvedChannels.length) {
             setChannelSettings(buildDefaultChannelSettings(resolvedChannels));
 
@@ -560,7 +577,8 @@ function ViewerPage() {
       ? selectedAnnotation
       : null;
 
-  const isOme = slideInfo?.type === "ome-tiff";
+  const isMultichannel = useMemo(() => isMultichannelSlide(slideInfo), [slideInfo]);
+  const useVivViewer = isMultichannel;
 
   useEffect(() => {
     setSelectedAnnotationId(null);
@@ -848,27 +866,27 @@ function ViewerPage() {
           <ViewerInfoSection
             selectedSlide={selectedSlide}
             slideInfo={slideInfo}
-            isOme={isOme}
+            useVivViewer={useVivViewer}
             selectedChannelsCount={selectedChannels.length}
             detectedChannelCount={normalizedChannels.length}
           />
 
           <ViewerStatusSection
             slideInfo={slideInfo}
-            isOme={isOme}
+            isMultichannel={isMultichannel}
             selectedChannelsCount={selectedChannels.length}
             detectedChannelCount={normalizedChannels.length}
           />
 
           <ViewerMetadataSection slideInfo={slideInfo} />
-          {isOme ? (
+          {useVivViewer ? (
             <ViewerChannelSummarySection
               channels={normalizedChannels}
               selectedChannels={selectedChannels}
             />
           ) : null}
 
-          {isOme && normalizedChannels.length ? (
+          {useVivViewer && normalizedChannels.length ? (
             <SidebarSection
               title="Channel controls"
               subtitle="Enable, filter, tint, and adjust multichannel rendering"
@@ -887,7 +905,7 @@ function ViewerPage() {
           ) : null}
 
           <AiSettingsPanel
-            isOme={isOme}
+            isOme={isMultichannel}
             channels={normalizedChannels}
             aiMode={aiMode}
             onAiModeChange={setAiMode}
@@ -936,7 +954,7 @@ function ViewerPage() {
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  {isOme ? (
+                  {useVivViewer ? (
                     <VivViewer
                       ref={viewerControlsRef}
                       slide={selectedSlide}
@@ -977,7 +995,7 @@ function ViewerPage() {
                           {slideInfo?.type || "unknown"}
                         </span>
                         <span className="viewer-badge viewer-badge--sm">
-                          {isOme ? "Multichannel" : "WSI"}
+                          {isMultichannel ? "Multichannel" : "WSI"}
                         </span>
                         <span className="viewer-badge viewer-badge--sm">
                           AI {String(aiMode).toUpperCase()}

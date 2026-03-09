@@ -1,9 +1,12 @@
 import os
+import io
+import math
 import base64
 from functools import lru_cache
 from urllib.parse import quote
 
 import large_image
+from PIL import Image
 from fastapi import FastAPI, Response, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -27,6 +30,7 @@ app.add_middleware(
 app.include_router(roi_ai_router)
 
 DATA_DIR = "/data/sample_slides"
+FALLBACK_TILE_SIZE = 256
 
 EMPTY_TILE = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
@@ -39,6 +43,9 @@ IMAGE_EXTENSIONS = (
     ".tiff",
     ".ome.tif",
     ".ome.tiff",
+    ".png",
+    ".jpg",
+    ".jpeg",
 )
 
 CACHE_HEADERS = {
@@ -71,14 +78,20 @@ def ensure_data_dir():
 
 def detect_slide_type(filename: str) -> str:
     lower = filename.lower()
+
     if lower.endswith(".ome.tif") or lower.endswith(".ome.tiff"):
         return "ome-tiff"
     if lower.endswith(".svs"):
         return "svs"
     if lower.endswith(".ndpi"):
         return "ndpi"
+    if lower.endswith(".png"):
+        return "png"
+    if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+        return "jpeg"
     if lower.endswith(".tif") or lower.endswith(".tiff"):
         return "tiff"
+
     return "unknown"
 
 
@@ -119,26 +132,79 @@ def get_cached_tilesource(filepath: str):
 
 
 @lru_cache(maxsize=64)
+def get_cached_pil_image(filepath: str):
+    with Image.open(filepath) as img:
+        img.load()
+        return img.copy()
+
+
+@lru_cache(maxsize=64)
 def get_cached_slide_metadata(filepath: str):
-    ts = get_cached_tilesource(filepath)
-    return ts.getMetadata()
+    try:
+        ts = get_cached_tilesource(filepath)
+        metadata = ts.getMetadata()
+        return {
+            "backend": "large_image",
+            "metadata": metadata,
+        }
+    except Exception:
+        img = get_cached_pil_image(filepath)
+        width, height = img.size
+        mode = img.mode or "RGB"
+
+        if mode in ("1", "L", "P"):
+            band_count = 1
+        elif mode in ("LA",):
+            band_count = 2
+        elif mode in ("RGB", "YCbCr"):
+            band_count = 3
+        elif mode in ("RGBA", "CMYK"):
+            band_count = 4
+        else:
+            try:
+                band_count = len(img.getbands())
+            except Exception:
+                band_count = 3
+
+        metadata = {
+            "sizeX": width,
+            "sizeY": height,
+            "tileWidth": FALLBACK_TILE_SIZE,
+            "tileHeight": FALLBACK_TILE_SIZE,
+            "levels": max(1, math.ceil(math.log2(max(width, height) / FALLBACK_TILE_SIZE)) + 1)
+            if max(width, height) > FALLBACK_TILE_SIZE
+            else 1,
+            "magnification": None,
+            "mm_x": None,
+            "mm_y": None,
+            "dtype": "uint8",
+            "bandCount": band_count,
+        }
+
+        return {
+            "backend": "pil",
+            "metadata": metadata,
+        }
 
 
 def clear_slide_caches():
     get_cached_tilesource.cache_clear()
+    get_cached_pil_image.cache_clear()
     get_cached_slide_metadata.cache_clear()
 
 
 def get_slide_type_and_metadata(filename: str):
     filepath = get_slide_path(filename)
+
     try:
-        metadata = get_cached_slide_metadata(filepath)
+        payload = get_cached_slide_metadata(filepath)
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Could not open slide: {str(e)}",
         )
-    return detect_slide_type(os.path.basename(filename)), metadata
+
+    return detect_slide_type(os.path.basename(filename)), payload["metadata"], payload["backend"]
 
 
 def extract_channels(metadata: dict) -> list:
@@ -146,14 +212,14 @@ def extract_channels(metadata: dict) -> list:
 
     if "channels" in metadata and isinstance(metadata["channels"], list):
         channels = [
-            {"index": i, "name": ch if ch is not None else f"Channel {i}"}
+            {"index": i, "name": ch if ch is not None else f"Channel {i + 1}"}
             for i, ch in enumerate(metadata["channels"])
         ]
     elif "frames" in metadata and isinstance(metadata["frames"], list):
         seen = set()
         for frame in metadata["frames"]:
             idx = frame.get("IndexC")
-            name = frame.get("Channel", f"Channel {idx}")
+            name = frame.get("Channel", f"Channel {idx + 1}" if idx is not None else "Channel")
             if idx is not None and idx not in seen:
                 channels.append({"index": idx, "name": name})
                 seen.add(idx)
@@ -161,7 +227,7 @@ def extract_channels(metadata: dict) -> list:
         band_count = metadata.get("bandCount")
         if band_count:
             channels = [
-                {"index": i, "name": f"Channel {i}"}
+                {"index": i, "name": f"Channel {i + 1}"}
                 for i in range(int(band_count))
             ]
 
@@ -186,8 +252,14 @@ def normalize_max_size(max_size: int) -> int:
 
 def get_media_type_for_source(filename: str) -> str:
     slide_type = detect_slide_type(filename)
+
     if slide_type in ("ome-tiff", "tiff"):
         return "image/tiff"
+    if slide_type == "png":
+        return "image/png"
+    if slide_type == "jpeg":
+        return "image/jpeg"
+
     return "application/octet-stream"
 
 
@@ -204,6 +276,64 @@ def build_slide_item(filename: str, relative_path: str) -> dict:
         "type": detect_slide_type(filename),
         "path": relative_path,
     }
+
+
+def pil_image_to_bytes(image: Image.Image, encoding: str = "JPEG") -> tuple[bytes, str]:
+    output = io.BytesIO()
+
+    if encoding.upper() == "PNG":
+        image.save(output, format="PNG")
+        return output.getvalue(), "image/png"
+
+    if image.mode not in ("RGB", "L"):
+      image = image.convert("RGB")
+
+    image.save(output, format="JPEG", quality=90)
+    return output.getvalue(), "image/jpeg"
+
+
+def get_pil_thumbnail(filepath: str, max_size: int) -> tuple[bytes, str]:
+    img = get_cached_pil_image(filepath).copy()
+    img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+    return pil_image_to_bytes(img, encoding="JPEG")
+
+
+def get_fallback_level_dimensions(width: int, height: int, z: int, max_level: int) -> tuple[int, int]:
+    downsample = 2 ** max(0, max_level - z)
+    level_width = max(1, math.ceil(width / downsample))
+    level_height = max(1, math.ceil(height / downsample))
+    return level_width, level_height
+
+
+def get_pil_tile(filepath: str, z: int, x: int, y: int, metadata: dict) -> tuple[bytes, str]:
+    img = get_cached_pil_image(filepath)
+    width, height = img.size
+
+    max_level = max((int(metadata.get("levels") or 1) - 1), 0)
+    tile_size = int(metadata.get("tileWidth") or FALLBACK_TILE_SIZE)
+
+    level_width, level_height = get_fallback_level_dimensions(width, height, z, max_level)
+
+    scaled = img.resize((level_width, level_height), Image.Resampling.LANCZOS)
+
+    left = x * tile_size
+    top = y * tile_size
+    right = min(left + tile_size, level_width)
+    bottom = min(top + tile_size, level_height)
+
+    if left >= level_width or top >= level_height:
+        return EMPTY_TILE, "image/png"
+
+    tile = scaled.crop((left, top, right, bottom))
+
+    if tile.size != (tile_size, tile_size):
+        padded = Image.new("RGB", (tile_size, tile_size), (0, 0, 0))
+        if tile.mode not in ("RGB", "L"):
+            tile = tile.convert("RGB")
+        padded.paste(tile, (0, 0))
+        tile = padded
+
+    return pil_image_to_bytes(tile, encoding="JPEG")
 
 
 @app.get("/")
@@ -349,13 +479,14 @@ def delete_item(payload: DeleteItemRequest):
 
 @app.get("/slide/{filename:path}/metadata")
 def get_metadata(filename: str):
-    slide_type, metadata = get_slide_type_and_metadata(filename)
+    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
     channels = extract_channels(metadata)
 
     return {
         "name": os.path.basename(filename),
         "path": filename,
         "type": slide_type,
+        "backend": backend,
         "metadata": metadata,
         "channels": channels,
     }
@@ -363,13 +494,22 @@ def get_metadata(filename: str):
 
 @app.get("/slide/{filename:path}/viv")
 def get_viv_info(filename: str):
-    slide_type, metadata = get_slide_type_and_metadata(filename)
+    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
     channels = extract_channels(metadata)
 
-    if slide_type != "ome-tiff":
+    band_count = int(metadata.get("bandCount") or 0)
+    is_multichannel = band_count > 3
+
+    if backend != "large_image":
         raise HTTPException(
             status_code=400,
-            detail="Viv endpoint currently supports OME-TIFF slides only",
+            detail="Viv endpoint requires large_image-compatible multichannel data",
+        )
+
+    if not is_multichannel:
+        raise HTTPException(
+            status_code=400,
+            detail="Viv endpoint supports multichannel images only",
         )
 
     return {
@@ -403,20 +543,23 @@ def get_thumbnail(
     max_size: int = Query(default=1400),
 ):
     filepath = get_slide_path(filename)
-    slide_type = detect_slide_type(os.path.basename(filename))
+    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
     max_size = normalize_max_size(max_size)
 
     try:
-        ts = get_cached_tilesource(filepath)
+        if backend == "large_image":
+            ts = get_cached_tilesource(filepath)
 
-        result = ts.getThumbnail(
-            width=max_size,
-            height=max_size,
-            frame=frame,
-            encoding="JPEG",
-        )
+            result = ts.getThumbnail(
+                width=max_size,
+                height=max_size,
+                frame=frame,
+                encoding="JPEG",
+            )
 
-        image_binary, mime_type = unpack_image_result(result)
+            image_binary, mime_type = unpack_image_result(result)
+        else:
+            image_binary, mime_type = get_pil_thumbnail(filepath, max_size)
 
         if slide_type == "ome-tiff" and color:
             image_binary = tint_grayscale_tile(image_binary, color=color)
@@ -447,20 +590,23 @@ def get_tile(
     color: str | None = Query(default=None),
 ):
     filepath = get_slide_path(filename)
-    slide_type = detect_slide_type(os.path.basename(filename))
+    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
 
     try:
-        ts = get_cached_tilesource(filepath)
+        if backend == "large_image":
+            ts = get_cached_tilesource(filepath)
 
-        result = ts.getTile(
-            x,
-            y,
-            z,
-            frame=frame,
-            encoding="JPEG",
-        )
+            result = ts.getTile(
+                x,
+                y,
+                z,
+                frame=frame,
+                encoding="JPEG",
+            )
 
-        tile_binary, mime_type = unpack_image_result(result)
+            tile_binary, mime_type = unpack_image_result(result)
+        else:
+            tile_binary, mime_type = get_pil_tile(filepath, z, x, y, metadata)
 
         if slide_type == "ome-tiff" and color:
             tile_binary = tint_grayscale_tile(tile_binary, color=color)
