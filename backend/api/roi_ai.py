@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 import large_image
 
 from models.ai_schemas import (
@@ -97,13 +97,17 @@ def _extract_slide_resolution(slide_path: str):
 
 
 @router.post("/slide/{filename:path}/ai/roi-segmentation", response_model=RoiSegmentationResponse)
-def run_roi_ai_segmentation(filename: str, payload: RoiSegmentationRequest):
+def run_roi_ai_segmentation(
+    filename: str,
+    payload: RoiSegmentationRequest,
+    source_id: str = Query(default="default"),
+):
     patch_path = None
 
     try:
         from main import get_slide_path
 
-        slide_path = get_slide_path(filename)
+        slide_path = get_slide_path(source_id, filename)
 
         # --- Detect slide resolution ---
         auto_mpp, auto_mag = _extract_slide_resolution(slide_path)
@@ -164,6 +168,7 @@ def run_roi_ai_segmentation(filename: str, payload: RoiSegmentationRequest):
             roi=payload.roi,
             layers=layers,
             stats={
+                "source_id": source_id,
                 "branches": {
                     layer.branch: layer.stats for layer in layers
                 },
