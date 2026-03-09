@@ -13,6 +13,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from api.roi_ai import router as roi_ai_router
+from api.uploads import router as uploads_router
+from api.sources import router as sources_router
+from services.source_registry_service import get_source_by_id, SourceNotFoundError
 from utils.image_utils import tint_grayscale_tile
 
 
@@ -28,8 +31,10 @@ app.add_middleware(
 )
 
 app.include_router(roi_ai_router)
+app.include_router(uploads_router)
+app.include_router(sources_router)
 
-DATA_DIR = "/data/sample_slides"
+DATA_DIR = os.getenv("VITAMINP_DATA_ROOT", "/data/sample_slides")
 FALLBACK_TILE_SIZE = 256
 
 EMPTY_TILE = base64.b64decode(
@@ -46,6 +51,13 @@ IMAGE_EXTENSIONS = (
     ".png",
     ".jpg",
     ".jpeg",
+    ".czi",
+    ".mrxs",
+    ".scn",
+    ".vms",
+    ".vmu",
+    ".dcm",
+    ".dicom",
 )
 
 CACHE_HEADERS = {
@@ -61,15 +73,18 @@ SOURCE_HEADERS = {
 class CreateFolderRequest(BaseModel):
     name: str
     parent_path: str = ""
+    source_id: str = "default"
 
 
 class RenameItemRequest(BaseModel):
     old_path: str
     new_name: str
+    source_id: str = "default"
 
 
 class DeleteItemRequest(BaseModel):
     path: str
+    source_id: str = "default"
 
 
 def ensure_data_dir():
@@ -85,6 +100,18 @@ def detect_slide_type(filename: str) -> str:
         return "svs"
     if lower.endswith(".ndpi"):
         return "ndpi"
+    if lower.endswith(".czi"):
+        return "czi"
+    if lower.endswith(".mrxs"):
+        return "mrxs"
+    if lower.endswith(".scn"):
+        return "scn"
+    if lower.endswith(".vms"):
+        return "vms"
+    if lower.endswith(".vmu"):
+        return "vmu"
+    if lower.endswith(".dcm") or lower.endswith(".dicom"):
+        return "dicom"
     if lower.endswith(".png"):
         return "png"
     if lower.endswith(".jpg") or lower.endswith(".jpeg"):
@@ -108,19 +135,36 @@ def sanitize_relative_path(path: str) -> str:
     return path
 
 
-def resolve_data_path(relative_path: str) -> str:
-    safe_rel = sanitize_relative_path(relative_path)
-    full_path = os.path.abspath(os.path.join(DATA_DIR, safe_rel))
-    data_root = os.path.abspath(DATA_DIR)
+def get_source_root(source_id: str = "default") -> str:
+    try:
+        source = get_source_by_id(source_id)
+    except SourceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    if not full_path.startswith(data_root):
+    if not source.enabled:
+        raise HTTPException(status_code=400, detail=f"Source '{source_id}' is disabled")
+
+    return os.path.abspath(source.path)
+
+
+def ensure_source_dir(source_id: str = "default"):
+    root = get_source_root(source_id)
+    os.makedirs(root, exist_ok=True)
+
+
+def resolve_source_path(source_id: str, relative_path: str) -> str:
+    safe_rel = sanitize_relative_path(relative_path)
+    source_root = get_source_root(source_id)
+    full_path = os.path.abspath(os.path.join(source_root, safe_rel))
+
+    if not full_path.startswith(source_root):
         raise HTTPException(status_code=400, detail="Invalid path")
 
     return full_path
 
 
-def get_slide_path(filename: str) -> str:
-    filepath = resolve_data_path(filename)
+def get_slide_path(source_id: str, filename: str) -> str:
+    filepath = resolve_source_path(source_id, filename)
     if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="Slide not found")
     return filepath
@@ -193,8 +237,8 @@ def clear_slide_caches():
     get_cached_slide_metadata.cache_clear()
 
 
-def get_slide_type_and_metadata(filename: str):
-    filepath = get_slide_path(filename)
+def get_slide_type_and_metadata(source_id: str, filename: str):
+    filepath = get_slide_path(source_id, filename)
 
     try:
         payload = get_cached_slide_metadata(filepath)
@@ -263,18 +307,20 @@ def get_media_type_for_source(filename: str) -> str:
     return "application/octet-stream"
 
 
-def build_folder_item(folder_name: str, relative_path: str) -> dict:
+def build_folder_item(folder_name: str, relative_path: str, source_id: str) -> dict:
     return {
         "name": folder_name,
         "path": relative_path,
+        "source_id": source_id,
     }
 
 
-def build_slide_item(filename: str, relative_path: str) -> dict:
+def build_slide_item(filename: str, relative_path: str, source_id: str) -> dict:
     return {
         "name": filename,
         "type": detect_slide_type(filename),
         "path": relative_path,
+        "source_id": source_id,
     }
 
 
@@ -286,7 +332,7 @@ def pil_image_to_bytes(image: Image.Image, encoding: str = "JPEG") -> tuple[byte
         return output.getvalue(), "image/png"
 
     if image.mode not in ("RGB", "L"):
-      image = image.convert("RGB")
+        image = image.convert("RGB")
 
     image.save(output, format="JPEG", quality=90)
     return output.getvalue(), "image/jpeg"
@@ -342,11 +388,15 @@ def read_root():
 
 
 @app.get("/slides")
-def list_slides(path: str = Query(default="")):
-    ensure_data_dir()
+def list_slides(
+    path: str = Query(default=""),
+    source_id: str = Query(default="default"),
+):
+    ensure_source_dir(source_id)
 
     relative_path = sanitize_relative_path(path)
-    target_dir = resolve_data_path(relative_path)
+    source_root = get_source_root(source_id)
+    target_dir = resolve_source_path(source_id, relative_path)
 
     if not os.path.exists(target_dir):
         raise HTTPException(status_code=404, detail="Folder not found")
@@ -361,14 +411,15 @@ def list_slides(path: str = Query(default="")):
 
     for entry in entries:
         full_path = os.path.join(target_dir, entry)
-        item_relative_path = os.path.relpath(full_path, DATA_DIR).replace("\\", "/")
+        item_relative_path = os.path.relpath(full_path, source_root).replace("\\", "/")
 
         if os.path.isdir(full_path):
-            folders.append(build_folder_item(entry, item_relative_path))
+            folders.append(build_folder_item(entry, item_relative_path, source_id))
         elif os.path.isfile(full_path) and entry.lower().endswith(IMAGE_EXTENSIONS):
-            slides.append(build_slide_item(entry, item_relative_path))
+            slides.append(build_slide_item(entry, item_relative_path, source_id))
 
     return {
+        "source_id": source_id,
         "current_path": relative_path,
         "folders": folders,
         "slides": slides,
@@ -377,7 +428,12 @@ def list_slides(path: str = Query(default="")):
 
 @app.post("/folders")
 def create_folder(payload: CreateFolderRequest):
-    ensure_data_dir()
+    source = get_source_by_id(payload.source_id)
+
+    if source.read_only:
+        raise HTTPException(status_code=403, detail="This source is read-only")
+
+    ensure_source_dir(payload.source_id)
 
     folder_name = payload.name.strip()
     if not folder_name:
@@ -387,7 +443,8 @@ def create_folder(payload: CreateFolderRequest):
         raise HTTPException(status_code=400, detail="Folder name must not contain slashes")
 
     parent_rel = sanitize_relative_path(payload.parent_path)
-    parent_dir = resolve_data_path(parent_rel)
+    source_root = get_source_root(payload.source_id)
+    parent_dir = resolve_source_path(payload.source_id, parent_rel)
 
     if not os.path.isdir(parent_dir):
         raise HTTPException(status_code=404, detail="Parent folder does not exist")
@@ -399,16 +456,21 @@ def create_folder(payload: CreateFolderRequest):
 
     os.makedirs(new_folder_path, exist_ok=False)
 
-    relative_path = os.path.relpath(new_folder_path, DATA_DIR).replace("\\", "/")
+    relative_path = os.path.relpath(new_folder_path, source_root).replace("\\", "/")
     return {
         "message": "Folder created successfully",
-        "folder": build_folder_item(folder_name, relative_path),
+        "folder": build_folder_item(folder_name, relative_path, payload.source_id),
     }
 
 
 @app.patch("/items/rename")
 def rename_item(payload: RenameItemRequest):
-    ensure_data_dir()
+    source = get_source_by_id(payload.source_id)
+
+    if source.read_only:
+        raise HTTPException(status_code=403, detail="This source is read-only")
+
+    ensure_source_dir(payload.source_id)
 
     old_rel = sanitize_relative_path(payload.old_path)
     new_name = payload.new_name.strip()
@@ -422,7 +484,8 @@ def rename_item(payload: RenameItemRequest):
     if "/" in new_name or "\\" in new_name:
         raise HTTPException(status_code=400, detail="New name must not contain slashes")
 
-    old_full = resolve_data_path(old_rel)
+    source_root = get_source_root(payload.source_id)
+    old_full = resolve_source_path(payload.source_id, old_rel)
 
     if not os.path.exists(old_full):
         raise HTTPException(status_code=404, detail="Item not found")
@@ -436,13 +499,14 @@ def rename_item(payload: RenameItemRequest):
     os.rename(old_full, new_full)
     clear_slide_caches()
 
-    new_rel = os.path.relpath(new_full, DATA_DIR).replace("\\", "/")
+    new_rel = os.path.relpath(new_full, source_root).replace("\\", "/")
 
     return {
         "message": "Item renamed successfully",
         "item": {
             "name": new_name,
             "path": new_rel,
+            "source_id": payload.source_id,
             "kind": "folder" if os.path.isdir(new_full) else "slide",
             "type": None if os.path.isdir(new_full) else detect_slide_type(new_name),
         },
@@ -451,13 +515,18 @@ def rename_item(payload: RenameItemRequest):
 
 @app.delete("/items")
 def delete_item(payload: DeleteItemRequest):
-    ensure_data_dir()
+    source = get_source_by_id(payload.source_id)
+
+    if source.read_only:
+        raise HTTPException(status_code=403, detail="This source is read-only")
+
+    ensure_source_dir(payload.source_id)
 
     rel_path = sanitize_relative_path(payload.path)
     if not rel_path:
         raise HTTPException(status_code=400, detail="Path is required")
 
-    full_path = resolve_data_path(rel_path)
+    full_path = resolve_source_path(payload.source_id, rel_path)
 
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="Item not found")
@@ -478,13 +547,17 @@ def delete_item(payload: DeleteItemRequest):
 
 
 @app.get("/slide/{filename:path}/metadata")
-def get_metadata(filename: str):
-    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
+def get_metadata(
+    filename: str,
+    source_id: str = Query(default="default"),
+):
+    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename)
     channels = extract_channels(metadata)
 
     return {
         "name": os.path.basename(filename),
         "path": filename,
+        "source_id": source_id,
         "type": slide_type,
         "backend": backend,
         "metadata": metadata,
@@ -493,8 +566,11 @@ def get_metadata(filename: str):
 
 
 @app.get("/slide/{filename:path}/viv")
-def get_viv_info(filename: str):
-    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
+def get_viv_info(
+    filename: str,
+    source_id: str = Query(default="default"),
+):
+    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename)
     channels = extract_channels(metadata)
 
     band_count = int(metadata.get("bandCount") or 0)
@@ -515,16 +591,20 @@ def get_viv_info(filename: str):
     return {
         "name": os.path.basename(filename),
         "path": filename,
+        "source_id": source_id,
         "type": slide_type,
-        "source_url": f"/slide/{quote(filename)}/source",
+        "source_url": f"/slide/{quote(filename)}/source?source_id={quote(source_id)}",
         "metadata": metadata,
         "channels": channels,
     }
 
 
 @app.get("/slide/{filename:path}/source")
-def get_slide_source(filename: str):
-    filepath = get_slide_path(filename)
+def get_slide_source(
+    filename: str,
+    source_id: str = Query(default="default"),
+):
+    filepath = get_slide_path(source_id, filename)
     media_type = get_media_type_for_source(os.path.basename(filename))
 
     return FileResponse(
@@ -541,9 +621,10 @@ def get_thumbnail(
     frame: int = Query(default=0),
     color: str | None = Query(default=None),
     max_size: int = Query(default=1400),
+    source_id: str = Query(default="default"),
 ):
-    filepath = get_slide_path(filename)
-    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
+    filepath = get_slide_path(source_id, filename)
+    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename)
     max_size = normalize_max_size(max_size)
 
     try:
@@ -572,7 +653,7 @@ def get_thumbnail(
         )
 
     except Exception as e:
-        print(f"THUMBNAIL ERROR for {filename} frame={frame}: {e}")
+        print(f"THUMBNAIL ERROR for {filename} frame={frame} source_id={source_id}: {e}")
         return Response(
             content=EMPTY_TILE,
             media_type="image/png",
@@ -588,9 +669,10 @@ def get_tile(
     y: int,
     frame: int = Query(default=0),
     color: str | None = Query(default=None),
+    source_id: str = Query(default="default"),
 ):
-    filepath = get_slide_path(filename)
-    slide_type, metadata, backend = get_slide_type_and_metadata(filename)
+    filepath = get_slide_path(source_id, filename)
+    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename)
 
     try:
         if backend == "large_image":
@@ -619,7 +701,7 @@ def get_tile(
         )
 
     except Exception as e:
-        print(f"TILE ERROR for {filename} z={z} x={x} y={y} frame={frame}: {e}")
+        print(f"TILE ERROR for {filename} z={z} x={x} y={y} frame={frame} source_id={source_id}: {e}")
         return Response(
             content=EMPTY_TILE,
             media_type="image/png",

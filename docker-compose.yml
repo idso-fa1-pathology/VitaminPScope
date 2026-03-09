@@ -19,8 +19,11 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data
+      - /Users/yshokrollahi/Downloads:/mounted/downloads
     environment:
       - AI_SERVICE_URL=http://ai_service:8001
+      - VITAMINP_DATA_ROOT=/data/sample_slides
+      - VITAMINP_ALLOWED_SOURCE_ROOTS=/data,/mnt/slides,/mounted
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   ai_service:

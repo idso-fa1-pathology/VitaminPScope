@@ -15,6 +15,8 @@ import { getMetersPerPixel } from "./scaleBarUtils";
 import AiResultOverlay from "../overlays/AiResultOverlay";
 
 function makeTileSource(slideName, metadata, options = {}) {
+  const { sourceId = "default", ...tileOptions } = options;
+
   return new OpenSeadragon.TileSource({
     height: metadata.sizeY,
     width: metadata.sizeX,
@@ -23,7 +25,10 @@ function makeTileSource(slideName, metadata, options = {}) {
     minLevel: 0,
     maxLevel: Math.max((metadata.levels || 1) - 1, 0),
     getTileUrl(level, x, y) {
-      return buildTileUrl(slideName, level, x, y, options);
+      return buildTileUrl(slideName, level, x, y, {
+        ...tileOptions,
+        sourceId,
+      });
     },
   });
 }
@@ -55,6 +60,7 @@ function formatMetricLength(meters) {
   const nm = meters * 1_000_000_000;
   return `${nm.toFixed(0)} nm`;
 }
+
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -162,6 +168,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
   {
     slide,
     slideInfo,
+    sourceId = "default",
     selectedChannels,
     activeTool = TOOL_PAN,
     annotations = [],
@@ -258,12 +265,13 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     viewer.addHandler("resize", updateZoomState);
 
     if (!isOme) {
-      viewer.open(makeTileSource(slidePath, metadata));
+      viewer.open(makeTileSource(slidePath, metadata, { sourceId }));
     } else if (!selectedChannels.length) {
       viewer.open(
         makeTileSource(slidePath, metadata, {
           frame: 0,
           color: "ffffff",
+          sourceId,
         })
       );
     } else {
@@ -271,6 +279,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         makeTileSource(slidePath, metadata, {
           frame: selectedChannels[0].index,
           color: selectedChannels[0].color,
+          sourceId,
         })
       );
 
@@ -286,6 +295,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
             tileSource: makeTileSource(slidePath, metadata, {
               frame: ch.index,
               color: ch.color,
+              sourceId,
             }),
             opacity: ch.opacity,
           });
@@ -302,7 +312,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         viewerRef.current = null;
       }
     };
-  }, [slide, slideInfo, selectedChannels]);
+  }, [slide, slideInfo, selectedChannels, sourceId]);
 
   useEffect(() => {
     if (!viewerRef.current) return;

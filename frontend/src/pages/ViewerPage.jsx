@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   buildThumbnailUrl,
   fetchSlides,
   fetchSlideMetadata,
+  fetchVivInfo,
   runRoiAiSegmentation,
 } from "../api/slides";
 import {
@@ -459,6 +460,7 @@ function ViewerDisplaySection({
 function ViewerPage() {
   const navigate = useNavigate();
   const { slideName } = useParams();
+  const [searchParams] = useSearchParams();
   const viewerControlsRef = useRef(null);
 
   const [slides, setSlides] = useState([]);
@@ -490,6 +492,7 @@ function ViewerPage() {
   const [imageAdjustmentsBySlide, setImageAdjustmentsBySlide] = useState({});
 
   const decodedSlidePath = decodeURIComponent(slideName || "");
+  const currentSourceId = searchParams.get("source_id") || "default";
 
   useEffect(() => {
     if (activeTool !== TOOL_SELECT) {
@@ -498,7 +501,7 @@ function ViewerPage() {
   }, [activeTool]);
 
   useEffect(() => {
-    fetchSlides()
+    fetchSlides("", currentSourceId)
       .then((data) => {
         const allSlides = data.slides || [];
         setSlides(allSlides);
@@ -507,7 +510,7 @@ function ViewerPage() {
         console.error("Error fetching slides:", err);
         setSlides([]);
       });
-  }, []);
+  }, [currentSourceId]);
 
   useEffect(() => {
     if (!decodedSlidePath) {
@@ -523,9 +526,10 @@ function ViewerPage() {
     setSelectedSlide({
       name: filename,
       path: decodedSlidePath,
+      sourceId: currentSourceId,
     });
 
-    fetchSlideMetadata(decodedSlidePath)
+    fetchSlideMetadata(decodedSlidePath, currentSourceId)
       .then((data) => {
         setSlideInfo(data);
 
@@ -568,7 +572,7 @@ function ViewerPage() {
         setChannelSettings({});
         setEnabledChannelIndexes([]);
       });
-  }, [decodedSlidePath]);
+    }, [decodedSlidePath, currentSourceId]);
 
   const normalizedChannels = useMemo(() => normalizeChannels(slideInfo), [slideInfo]);
 
@@ -581,7 +585,9 @@ function ViewerPage() {
       .sort((a, b) => a.index - b.index);
   }, [enabledChannelIndexes, channelSettings]);
 
-  const slideAnnotationKey = selectedSlide?.path || selectedSlide?.name || "";
+  const slideAnnotationKey = selectedSlide
+  ? `${selectedSlide.sourceId || "default"}::${selectedSlide.path || selectedSlide.name || ""}`
+  : "";
   const annotations = annotationsBySlide[slideAnnotationKey] || [];
   const aiLayers = aiLayersBySlide[slideAnnotationKey] || [];
 
@@ -796,7 +802,11 @@ function ViewerPage() {
             : null,
       };
 
-      const result = await runRoiAiSegmentation(selectedSlide.path, payload);
+      const result = await runRoiAiSegmentation(
+        selectedSlide.path,
+        payload,
+        selectedSlide.sourceId || currentSourceId
+      );
 
       setAiLayersBySlide((prev) => ({
         ...prev,
@@ -813,7 +823,11 @@ function ViewerPage() {
   const handleSlideChange = (event) => {
     const nextSlidePath = event.target.value;
     if (!nextSlidePath || nextSlidePath === selectedSlide?.path) return;
-    navigate(`/viewer/${encodeURIComponent(nextSlidePath)}`);
+    navigate(
+      `/viewer/${encodeURIComponent(nextSlidePath)}?source_id=${encodeURIComponent(
+        currentSourceId
+      )}`
+    );
   };
 
   const handleShowAllOverlays = () => {
@@ -834,7 +848,10 @@ function ViewerPage() {
 
   const buildPreviewUrl = (slide) => {
     const slidePath = slide?.path || slide?.name;
-    return buildThumbnailUrl(slidePath, { max_size: 1600 });
+    return buildThumbnailUrl(slidePath, {
+      max_size: 1600,
+      sourceId: slide?.sourceId || currentSourceId,
+    });
   };
 
   if (!selectedSlide) {
@@ -1004,6 +1021,7 @@ function ViewerPage() {
                       ref={viewerControlsRef}
                       slide={selectedSlide}
                       slideInfo={slideInfo}
+                      sourceId={currentSourceId}
                       selectedChannels={selectedChannels}
                       activeTool={activeTool}
                       annotations={annotations}
@@ -1022,6 +1040,7 @@ function ViewerPage() {
                       ref={viewerControlsRef}
                       slide={selectedSlide}
                       slideInfo={slideInfo}
+                      sourceId={currentSourceId}
                       selectedChannels={selectedChannels}
                       activeTool={activeTool}
                       annotations={annotations}

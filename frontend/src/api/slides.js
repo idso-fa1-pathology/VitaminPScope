@@ -1,16 +1,23 @@
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
+function appendSourceId(params, sourceId = "default") {
+  params.set("source_id", sourceId || "default");
+  return params;
+}
+
 /* -----------------------------
    Slide listing
 ----------------------------- */
 
-export async function fetchSlides(path = "") {
+export async function fetchSlides(path = "", sourceId = "default") {
   const params = new URLSearchParams();
 
   if (path) {
     params.set("path", path);
   }
+
+  appendSourceId(params, sourceId);
 
   const query = params.toString();
   const url = `${BACKEND_URL}/slides${query ? `?${query}` : ""}`;
@@ -29,9 +36,12 @@ export async function fetchSlides(path = "") {
    Slide metadata
 ----------------------------- */
 
-export async function fetchSlideMetadata(slideName) {
+export async function fetchSlideMetadata(slideName, sourceId = "default") {
+  const params = new URLSearchParams();
+  appendSourceId(params, sourceId);
+
   const res = await fetch(
-    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/metadata`
+    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/metadata?${params.toString()}`
   );
 
   if (!res.ok) {
@@ -46,7 +56,7 @@ export async function fetchSlideMetadata(slideName) {
    Folder operations
 ----------------------------- */
 
-export async function createFolder(name, parentPath = "") {
+export async function createFolder(name, parentPath = "", sourceId = "default") {
   const res = await fetch(`${BACKEND_URL}/folders`, {
     method: "POST",
     headers: {
@@ -55,6 +65,7 @@ export async function createFolder(name, parentPath = "") {
     body: JSON.stringify({
       name,
       parent_path: parentPath,
+      source_id: sourceId,
     }),
   });
 
@@ -66,7 +77,7 @@ export async function createFolder(name, parentPath = "") {
   return res.json();
 }
 
-export async function renameItem(oldPath, newName) {
+export async function renameItem(oldPath, newName, sourceId = "default") {
   const res = await fetch(`${BACKEND_URL}/items/rename`, {
     method: "PATCH",
     headers: {
@@ -75,6 +86,7 @@ export async function renameItem(oldPath, newName) {
     body: JSON.stringify({
       old_path: oldPath,
       new_name: newName,
+      source_id: sourceId,
     }),
   });
 
@@ -86,13 +98,16 @@ export async function renameItem(oldPath, newName) {
   return res.json();
 }
 
-export async function deleteItem(path) {
+export async function deleteItem(path, sourceId = "default") {
   const res = await fetch(`${BACKEND_URL}/items`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ path }),
+    body: JSON.stringify({
+      path,
+      source_id: sourceId,
+    }),
   });
 
   if (!res.ok) {
@@ -118,6 +133,8 @@ export function buildTileUrl(slideName, z, x, y, options = {}) {
     params.set("color", options.color);
   }
 
+  appendSourceId(params, options.sourceId);
+
   const query = params.toString();
 
   return `${BACKEND_URL}/slide/${encodeURIComponent(
@@ -140,6 +157,8 @@ export function buildThumbnailUrl(slideName, options = {}) {
     params.set("max_size", options.max_size);
   }
 
+  appendSourceId(params, options.sourceId);
+
   const query = params.toString();
 
   return `${BACKEND_URL}/slide/${encodeURIComponent(
@@ -147,17 +166,25 @@ export function buildThumbnailUrl(slideName, options = {}) {
   )}/thumbnail${query ? `?${query}` : ""}`;
 }
 
-export function buildSlideSourceUrl(slideName) {
-  return `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/source`;
+export function buildSlideSourceUrl(slideName, sourceId = "default") {
+  const params = new URLSearchParams();
+  appendSourceId(params, sourceId);
+
+  return `${BACKEND_URL}/slide/${encodeURIComponent(
+    slideName
+  )}/source?${params.toString()}`;
 }
 
 /* -----------------------------
    Viv viewer info
 ----------------------------- */
 
-export async function fetchVivInfo(slideName) {
+export async function fetchVivInfo(slideName, sourceId = "default") {
+  const params = new URLSearchParams();
+  appendSourceId(params, sourceId);
+
   const res = await fetch(
-    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv`
+    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv?${params.toString()}`
   );
 
   if (!res.ok) {
@@ -172,11 +199,14 @@ export async function fetchVivInfo(slideName) {
    ROI AI segmentation
 ----------------------------- */
 
-export async function runRoiAiSegmentation(slideName, payload) {
+export async function runRoiAiSegmentation(slideName, payload, sourceId = "default") {
+  const params = new URLSearchParams();
+  appendSourceId(params, sourceId);
+
   const res = await fetch(
     `${BACKEND_URL}/slide/${encodeURIComponent(
       slideName
-    )}/ai/roi-segmentation`,
+    )}/ai/roi-segmentation?${params.toString()}`,
     {
       method: "POST",
       headers: {

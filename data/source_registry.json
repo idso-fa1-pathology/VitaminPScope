@@ -1,0 +1,20 @@
+[
+  {
+    "id": "default",
+    "name": "Local Samples",
+    "path": "/data/sample_slides",
+    "enabled": true,
+    "read_only": false,
+    "source_type": "local",
+    "is_default": true
+  },
+  {
+    "id": "test1",
+    "name": "test1",
+    "path": "/data/mount",
+    "enabled": true,
+    "read_only": true,
+    "source_type": "local",
+    "is_default": false
+  }
+]

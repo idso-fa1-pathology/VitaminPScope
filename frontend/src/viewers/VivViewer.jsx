@@ -220,6 +220,7 @@ const VivViewer = forwardRef(function VivViewer(
   {
     slide,
     slideInfo,
+    sourceId = "default",
     selectedChannels,
     activeTool = TOOL_PAN,
     annotations = [],
@@ -255,13 +256,21 @@ const VivViewer = forwardRef(function VivViewer(
 
   const sourceUrl = useMemo(() => {
     if (!slide) return null;
-    return `${API_BASE}/slide/${encodeURIComponent(slide.name)}/source`;
-  }, [slide]);
+
+    const slidePath = slide.path || slide.name;
+    return `${API_BASE}/slide/${encodeURIComponent(
+      slidePath
+    )}/source?source_id=${encodeURIComponent(sourceId)}`;
+  }, [slide, sourceId]);
 
   const thumbnailUrl = useMemo(() => {
     if (!slide) return null;
-    return `${API_BASE}/slide/${encodeURIComponent(slide.name)}/thumbnail?max_size=1400`;
-  }, [slide]);
+
+    const slidePath = slide.path || slide.name;
+    return `${API_BASE}/slide/${encodeURIComponent(
+      slidePath
+    )}/thumbnail?max_size=1400&source_id=${encodeURIComponent(sourceId)}`;
+  }, [slide, sourceId]);
 
   const normalizedChannels = useMemo(() => normalizeChannels(slideInfo), [slideInfo]);
 
@@ -289,17 +298,19 @@ const VivViewer = forwardRef(function VivViewer(
   const coloredThumbnailUrls = useMemo(() => {
     if (!slide || !activeChannels.length) return [];
 
+    const slidePath = slide.path || slide.name;
+
     return activeChannels.map((ch) => ({
       index: ch.index,
       color: ch.color,
       opacity: ch.opacity ?? 1,
       url: `${API_BASE}/slide/${encodeURIComponent(
-        slide.name
+        slidePath
       )}/thumbnail?max_size=1400&frame=${encodeURIComponent(
         ch.index
-      )}&color=${encodeURIComponent(ch.color)}`,
+      )}&color=${encodeURIComponent(ch.color)}&source_id=${encodeURIComponent(sourceId)}`,
     }));
-  }, [slide, activeChannels]);
+  }, [slide, activeChannels, sourceId]);
 
   const contrastSignature = useMemo(() => {
     const keys = Object.keys(contrastByChannel)
@@ -316,12 +327,13 @@ const VivViewer = forwardRef(function VivViewer(
 
   const startupLayerSignature = useMemo(() => {
     return [
-      slide?.name || "",
+      sourceId,
+      slide?.path || slide?.name || "",
       loader ? "loader-ready" : "loader-empty",
       selectedChannelsSignature,
       contrastSignature,
     ].join("||");
-  }, [slide?.name, loader, selectedChannelsSignature, contrastSignature]);
+  }, [sourceId, slide?.path, slide?.name, loader, selectedChannelsSignature, contrastSignature]);
 
   const vivScaleBar = useMemo(() => {
     const metersPerPixel = getMetersPerPixel(slideInfo);
@@ -559,7 +571,7 @@ const VivViewer = forwardRef(function VivViewer(
     return () => {
       cancelled = true;
     };
-  }, [slide?.name, sourceUrl, thumbnailUrl, slideInfo, normalizedChannels]);
+  }, [slide?.name, slide?.path, sourceId, sourceUrl, thumbnailUrl, slideInfo, normalizedChannels]);
 
   useEffect(() => {
     if (!showThumbnail) return;
@@ -592,7 +604,7 @@ const VivViewer = forwardRef(function VivViewer(
     );
 
     return new MultiscaleImageLayer({
-      id: `viv-layer-${slide.name}`,
+      id: `viv-layer-${sourceId}-${slide.path || slide.name}`,
       loader,
       selections,
       colors,
@@ -786,7 +798,7 @@ const VivViewer = forwardRef(function VivViewer(
           }}
         >
           <DeckGL
-            key={slide.name}
+            key={`${sourceId}-${slide.path || slide.name}`}
             views={ORTHO_VIEW}
             controller={controller}
             initialViewState={deckInitialViewState}

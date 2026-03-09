@@ -1,24 +1,91 @@
 import ActionMenu from "./ActionMenu";
 
+function normalizeType(type) {
+  if (!type) return "unknown";
+  return String(type).trim().toLowerCase();
+}
+
 function getCardIcon(item) {
   if (item.kind === "folder") return "📁";
-  if (item.type === "ome-tiff") return "🧬";
-  if (item.type === "svs") return "🔬";
-  return "🖼️";
+
+  const type = normalizeType(item.type);
+
+  const iconMap = {
+    "ome-tiff": "🧬",
+    "ome.tiff": "🧬",
+    svs: "🔬",
+    ndpi: "🩺",
+    czi: "🧪",
+    mrxs: "🧫",
+    scn: "🖼️",
+    vms: "🗃️",
+    vmu: "🗃️",
+    tif: "🖼️",
+    tiff: "🖼️",
+    png: "🖼️",
+    jpg: "🖼️",
+    jpeg: "🖼️",
+    dcm: "🏥",
+    dicom: "🏥",
+  };
+
+  return iconMap[type] || "🖼️";
 }
 
 function getItemLabel(item) {
   if (item.kind === "folder") return "Folder";
-  if (item.type === "ome-tiff") return "OME-TIFF";
-  if (item.type === "svs") return "SVS";
-  return item.type || "File";
+
+  const type = normalizeType(item.type);
+
+  const labelMap = {
+    "ome-tiff": "OME-TIFF",
+    "ome.tiff": "OME-TIFF",
+    svs: "SVS",
+    ndpi: "NDPI",
+    czi: "CZI",
+    mrxs: "MRXS",
+    scn: "SCN",
+    vms: "VMS",
+    vmu: "VMU",
+    tif: "TIF",
+    tiff: "TIFF",
+    png: "PNG",
+    jpg: "JPG",
+    jpeg: "JPEG",
+    dcm: "DICOM",
+    dicom: "DICOM",
+    unknown: "Unknown",
+  };
+
+  return labelMap[type] || String(item.type || "File").toUpperCase();
 }
 
 function getItemDescription(item) {
   if (item.kind === "folder") return "Organize related slide assets";
-  if (item.type === "ome-tiff") return "High-resolution OME-TIFF slide";
-  if (item.type === "svs") return "Whole-slide SVS pathology image";
-  return "Image file";
+
+  const type = normalizeType(item.type);
+
+  const descriptionMap = {
+    "ome-tiff": "Multichannel OME-TIFF pathology image",
+    "ome.tiff": "Multichannel OME-TIFF pathology image",
+    svs: "Whole-slide SVS pathology image",
+    ndpi: "Hamamatsu NDPI whole-slide image",
+    czi: "Zeiss CZI microscopy image",
+    mrxs: "3DHISTECH MRXS whole-slide image",
+    scn: "Leica SCN pathology image",
+    vms: "Virtual slide image file",
+    vmu: "Virtual slide metadata file",
+    tif: "TIFF image file",
+    tiff: "TIFF image file",
+    png: "PNG image file",
+    jpg: "JPEG image file",
+    jpeg: "JPEG image file",
+    dcm: "DICOM medical image",
+    dicom: "DICOM medical image",
+    unknown: "Image file",
+  };
+
+  return descriptionMap[type] || `${getItemLabel(item)} image file`;
 }
 
 function FileManagerCard({ item, onOpen, onRename, onDelete }) {
