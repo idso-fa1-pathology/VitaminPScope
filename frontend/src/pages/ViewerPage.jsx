@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  buildThumbnailUrl,
   fetchSlides,
   fetchSlideMetadata,
   runRoiAiSegmentation,
@@ -16,6 +17,9 @@ import {
 import AnnotationToolbar from "../annotations/AnnotationToolbar";
 import AiSettingsPanel from "../components/AiSettingsPanel";
 import ChannelPanel from "../components/ChannelPanel";
+import ImageAdjustPanel, {
+  DEFAULT_IMAGE_ADJUSTMENTS,
+} from "../components/ImageAdjustPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
 import VivViewer from "../viewers/VivViewer";
 import "../styles/viewer-page.css";
@@ -308,7 +312,13 @@ function ViewerMetadataSection({ slideInfo }) {
   );
 }
 
-function ViewerToolsSection({ onResetView, onZoomIn, onZoomOut, onSetTool }) {
+function ViewerToolsSection({
+  onResetView,
+  onZoomIn,
+  onZoomOut,
+  onSetTool,
+  onOpenImageAdjustments,
+}) {
   return (
     <SidebarSection
       title="Quick actions"
@@ -332,6 +342,9 @@ function ViewerToolsSection({ onResetView, onZoomIn, onZoomOut, onSetTool }) {
         </button>
         <button className="viewer-tool-btn" onClick={() => onSetTool(TOOL_AI)} type="button">
           🤖 AI overlay
+        </button>
+        <button className="viewer-tool-btn" onClick={onOpenImageAdjustments} type="button">
+          🎛 Image adjustments
         </button>
       </div>
     </SidebarSection>
@@ -473,6 +486,9 @@ function ViewerPage() {
   const [showBottomOverlay, setShowBottomOverlay] = useState(true);
   const [showScaleBar, setShowScaleBar] = useState(true);
 
+  const [showImageAdjustPanel, setShowImageAdjustPanel] = useState(false);
+  const [imageAdjustmentsBySlide, setImageAdjustmentsBySlide] = useState({});
+
   const decodedSlidePath = decodeURIComponent(slideName || "");
 
   useEffect(() => {
@@ -580,9 +596,13 @@ function ViewerPage() {
   const isMultichannel = useMemo(() => isMultichannelSlide(slideInfo), [slideInfo]);
   const useVivViewer = isMultichannel;
 
+  const imageAdjustments =
+    imageAdjustmentsBySlide[slideAnnotationKey] || DEFAULT_IMAGE_ADJUSTMENTS;
+
   useEffect(() => {
     setSelectedAnnotationId(null);
     setAiError("");
+    setShowImageAdjustPanel(false);
   }, [slideAnnotationKey]);
 
   useEffect(() => {
@@ -705,6 +725,24 @@ function ViewerPage() {
     setAiError("");
   };
 
+  const handleImageAdjustmentsChange = (nextAdjustments) => {
+    if (!slideAnnotationKey) return;
+
+    setImageAdjustmentsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: nextAdjustments,
+    }));
+  };
+
+  const handleResetImageAdjustments = () => {
+    if (!slideAnnotationKey) return;
+
+    setImageAdjustmentsBySlide((prev) => ({
+      ...prev,
+      [slideAnnotationKey]: { ...DEFAULT_IMAGE_ADJUSTMENTS },
+    }));
+  };
+
   const handleRunAiOnSelectedRoi = async () => {
     if (!selectedSlide?.path) return;
 
@@ -792,6 +830,11 @@ function ViewerPage() {
     setShowZoomControls(false);
     setShowBottomOverlay(false);
     setShowScaleBar(false);
+  };
+
+  const buildPreviewUrl = (slide) => {
+    const slidePath = slide?.path || slide?.name;
+    return buildThumbnailUrl(slidePath, { max_size: 1600 });
   };
 
   if (!selectedSlide) {
@@ -923,7 +966,9 @@ function ViewerPage() {
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onSetTool={setActiveTool}
+            onOpenImageAdjustments={() => setShowImageAdjustPanel(true)}
           />
+
           <ViewerDisplaySection
             showTopOverlay={showTopOverlay}
             setShowTopOverlay={setShowTopOverlay}
@@ -969,6 +1014,8 @@ function ViewerPage() {
                       selectedAnnotationId={selectedAnnotationId}
                       onSelectAnnotation={setSelectedAnnotationId}
                       annotationColor={annotationColor}
+                      imageAdjustments={imageAdjustments}
+                      buildPreviewUrl={buildPreviewUrl}
                     />
                   ) : (
                     <OpenSeadragonViewer
@@ -985,6 +1032,8 @@ function ViewerPage() {
                       selectedAnnotationId={selectedAnnotationId}
                       onSelectAnnotation={setSelectedAnnotationId}
                       annotationColor={annotationColor}
+                      imageAdjustments={imageAdjustments}
+                      buildPreviewUrl={buildPreviewUrl}
                     />
                   )}
 
@@ -999,6 +1048,9 @@ function ViewerPage() {
                         </span>
                         <span className="viewer-badge viewer-badge--sm">
                           AI {String(aiMode).toUpperCase()}
+                        </span>
+                        <span className="viewer-badge viewer-badge--sm">
+                          {imageAdjustments.auto ? "Auto tone" : "Manual tone"}
                         </span>
                         {isRunningAi ? (
                           <span className="viewer-badge viewer-badge--sm viewer-badge--primary viewer-badge--blink">
@@ -1072,6 +1124,14 @@ function ViewerPage() {
                         </button>
                         <button
                           className="viewer-fab-btn"
+                          onClick={() => setShowImageAdjustPanel(true)}
+                          type="button"
+                          title="Image adjustments"
+                        >
+                          🎛
+                        </button>
+                        <button
+                          className="viewer-fab-btn"
                           onClick={handleRunAiOnSelectedRoi}
                           type="button"
                           disabled={!selectedRoiAnnotation || isRunningAi}
@@ -1104,6 +1164,9 @@ function ViewerPage() {
                         <span className="viewer-badge">
                           {aiLayers.length} AI layer{aiLayers.length === 1 ? "" : "s"}
                         </span>
+                        <span className="viewer-badge">
+                          γ {Number(imageAdjustments.gamma).toFixed(2)}
+                        </span>
                         <span
                           className={`viewer-badge viewer-badge--${getAiBadgeTone(
                             aiError,
@@ -1128,6 +1191,14 @@ function ViewerPage() {
           </div>
         </main>
       </div>
+
+      <ImageAdjustPanel
+        isOpen={showImageAdjustPanel}
+        adjustments={imageAdjustments}
+        onChange={handleImageAdjustmentsChange}
+        onClose={() => setShowImageAdjustPanel(false)}
+        onReset={handleResetImageAdjustments}
+      />
     </div>
   );
 }
