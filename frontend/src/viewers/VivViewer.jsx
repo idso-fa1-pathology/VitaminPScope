@@ -79,6 +79,107 @@ function getDevicePixelRatio() {
   if (typeof window === "undefined") return 1;
   return Math.min(window.devicePixelRatio || 1, 1.5);
 }
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function percentile(sorted, p) {
+  if (!sorted.length) return 0;
+  const index = Math.floor((p / 100) * (sorted.length - 1));
+  return sorted[clamp(index, 0, sorted.length - 1)];
+}
+
+function computeAutoFromImage(img) {
+  const maxSide = 160;
+  const scale = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1));
+  const width = Math.max(1, Math.round((img.width || 1) * scale));
+  const height = Math.max(1, Math.round((img.height || 1) * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) {
+    return { autoLow: 0, autoHigh: 255 };
+  }
+
+  ctx.drawImage(img, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
+
+  const luminance = [];
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha === 0) continue;
+
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    luminance.push(y);
+  }
+
+  if (!luminance.length) {
+    return { autoLow: 0, autoHigh: 255 };
+  }
+
+  luminance.sort((a, b) => a - b);
+
+  let autoLow = percentile(luminance, 2);
+  let autoHigh = percentile(luminance, 98);
+
+  if (autoHigh <= autoLow + 2) {
+    autoLow = 0;
+    autoHigh = 255;
+  }
+
+  return { autoLow, autoHigh };
+}
+
+function buildCanvasFilterString(adjustments, autoWindow) {
+  if (!adjustments) return "none";
+
+  let brightness = 1 + (adjustments.brightness || 0) / 100;
+  let contrast = adjustments.contrast ?? 1;
+  const saturation = adjustments.saturation ?? 1;
+  const grayscale = adjustments.grayscale ? 1 : 0;
+  const invert = adjustments.invert ? 1 : 0;
+
+  if (adjustments.auto && autoWindow) {
+    const span = Math.max(1, autoWindow.autoHigh - autoWindow.autoLow);
+    const contrastBoost = clamp(255 / span, 0.8, 3);
+    const brightnessOffset = clamp(
+      ((127.5 - (autoWindow.autoLow + autoWindow.autoHigh) / 2) / 255) * 0.6,
+      -0.35,
+      0.35
+    );
+
+    brightness += brightnessOffset;
+    contrast *= contrastBoost;
+  }
+
+  brightness = clamp(brightness, 0, 4);
+  contrast = clamp(contrast, 0, 4);
+
+  const parts = [
+    `brightness(${brightness.toFixed(3)})`,
+    `contrast(${contrast.toFixed(3)})`,
+  ];
+
+  if (Math.abs(saturation - 1) > 0.001) {
+    parts.push(`saturate(${clamp(saturation, 0, 4).toFixed(3)})`);
+  }
+
+  if (grayscale > 0) {
+    parts.push(`grayscale(1)`);
+  }
+
+  if (invert > 0) {
+    parts.push(`invert(1)`);
+  }
+
+  return parts.join(" ");
+}
 
 function percentileFromSorted(sorted, p) {
   if (!sorted.length) return 0;
@@ -233,6 +334,8 @@ const VivViewer = forwardRef(function VivViewer(
     selectedAnnotationId,
     onSelectAnnotation,
     annotationColor,
+    imageAdjustments,
+    buildPreviewUrl,
     showMiniMap = true,
     miniMapWidth = 180,
     miniMapMaxHeight = 220,
@@ -246,6 +349,7 @@ const VivViewer = forwardRef(function VivViewer(
   const startupSessionRef = useRef(0);
   const contrastReadyRef = useRef(false);
   const vivStableRef = useRef(false);
+  const autoRequestRef = useRef(0);
 
   const [loader, setLoader] = useState(null);
   const [deckInitialViewState, setDeckInitialViewState] = useState(null);
@@ -255,6 +359,7 @@ const VivViewer = forwardRef(function VivViewer(
   const [showThumbnail, setShowThumbnail] = useState(true);
   const [error, setError] = useState("");
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [autoWindow, setAutoWindow] = useState(null);
 
   const sourceUrl = useMemo(() => {
     if (!slide) return null;
@@ -339,6 +444,19 @@ const VivViewer = forwardRef(function VivViewer(
       contrastSignature,
     ].join("||");
   }, [sourceId, slide?.path, slide?.name, loader, selectedChannelsSignature, contrastSignature]);
+
+  const canvasFilter = useMemo(() => {
+    return buildCanvasFilterString(imageAdjustments, autoWindow);
+  }, [imageAdjustments, autoWindow]);
+
+  const renderOpacity = useMemo(() => {
+    if (Math.abs((imageAdjustments?.gamma ?? 1) - 1) > 0.001) {
+      const gamma = clamp(imageAdjustments.gamma ?? 1, 0.4, 2.5);
+      return clamp(Math.pow(1 / gamma, 0.7), 0.65, 1);
+    }
+
+    return 1;
+  }, [imageAdjustments?.gamma]);
 
   const vivScaleBar = useMemo(() => {
     const metersPerPixel = getMetersPerPixel(slideInfo);
@@ -479,6 +597,43 @@ const VivViewer = forwardRef(function VivViewer(
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!slide || !slideInfo || !buildPreviewUrl || !imageAdjustments?.auto) {
+      setAutoWindow(null);
+      return;
+    }
+
+    const url = buildPreviewUrl(slide);
+    if (!url) {
+      setAutoWindow(null);
+      return;
+    }
+
+    const requestId = autoRequestRef.current + 1;
+    autoRequestRef.current = requestId;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+
+    img.onload = () => {
+      if (autoRequestRef.current !== requestId) return;
+
+      try {
+        setAutoWindow(computeAutoFromImage(img));
+      } catch {
+        setAutoWindow({ autoLow: 0, autoHigh: 255 });
+      }
+    };
+
+    img.onerror = () => {
+      if (autoRequestRef.current !== requestId) return;
+      setAutoWindow({ autoLow: 0, autoHigh: 255 });
+    };
+
+    img.src = url;
+  }, [slide, slideInfo, imageAdjustments?.auto, buildPreviewUrl]);
 
   useEffect(() => {
     if (!slide || !slideInfo || !sourceUrl || !containerRef.current) return;
@@ -648,6 +803,36 @@ const VivViewer = forwardRef(function VivViewer(
       }
     });
   }, [showThumbnail, loader, layer, activeChannels.length]);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const applyFilter = () => {
+      const canvases = Array.from(container.querySelectorAll("canvas"));
+      const deckCanvas = canvases.find((node) => node.width > 0 && node.height > 0);
+
+      if (!deckCanvas) return;
+
+      deckCanvas.style.filter = canvasFilter || "none";
+      deckCanvas.style.opacity = String(renderOpacity);
+      deckCanvas.style.transformOrigin = "0 0";
+    };
+
+    applyFilter();
+    const raf = requestAnimationFrame(applyFilter);
+
+    return () => {
+      cancelAnimationFrame(raf);
+
+      const canvases = Array.from(container.querySelectorAll("canvas"));
+      const deckCanvas = canvases.find((node) => node.width > 0 && node.height > 0);
+
+      if (deckCanvas) {
+        deckCanvas.style.filter = "none";
+        deckCanvas.style.opacity = "1";
+      }
+    };
+  }, [canvasFilter, renderOpacity, loader, viewState, activeChannels.length]);
 
   if (!slide || !slideInfo) {
     return <div style={{ flex: 1, background: "#111" }} />;
@@ -704,9 +889,11 @@ const VivViewer = forwardRef(function VivViewer(
             position: "absolute",
             inset: 0,
             zIndex: 2,
-            opacity: showThumbnail ? 0.98 : 0,
+            opacity: showThumbnail ? 0.98 * renderOpacity : 0,
             transition: "opacity 180ms ease",
             pointerEvents: "none",
+            filter: canvasFilter || "none",
+            transformOrigin: "0 0",
           }}
         >
           {activeChannels.length ? (
@@ -715,13 +902,15 @@ const VivViewer = forwardRef(function VivViewer(
                 position: "absolute",
                 inset: 0,
                 background: "#000",
+                filter: canvasFilter || "none",
+                opacity: renderOpacity,
+                transformOrigin: "0 0",
               }}
             >
               {coloredThumbnailUrls.map((thumb) => (
                 <img
-                  key={`${thumb.index}-${thumb.color}-${thumb.opacity}`}
-                  src={thumb.url}
-                  alt={`channel-${thumb.index}`}
+                  src={thumbnailUrl}
+                  alt="thumbnail"
                   decoding="async"
                   loading="eager"
                   draggable={false}
@@ -731,10 +920,11 @@ const VivViewer = forwardRef(function VivViewer(
                     width: "100%",
                     height: "100%",
                     objectFit: "contain",
-                    mixBlendMode: "screen",
-                    opacity: Math.max(0.05, Math.min(1, thumb.opacity)),
                     pointerEvents: "none",
                     userSelect: "none",
+                    filter: canvasFilter || "none",
+                    opacity: renderOpacity,
+                    transformOrigin: "0 0",
                   }}
                 />
               ))}
@@ -848,6 +1038,9 @@ const VivViewer = forwardRef(function VivViewer(
                   position: "absolute",
                   inset: 0,
                   background: "#000",
+                  filter: canvasFilter || "none",
+                  opacity: renderOpacity,
+                  transformOrigin: "0 0",
                 }}
               >
                 {coloredThumbnailUrls.map((thumb) => (
@@ -883,6 +1076,9 @@ const VivViewer = forwardRef(function VivViewer(
                   objectFit: "contain",
                   pointerEvents: "none",
                   userSelect: "none",
+                  filter: canvasFilter || "none",
+                  opacity: renderOpacity,
+                  transformOrigin: "0 0",
                 }}
               />
             ) : null}
