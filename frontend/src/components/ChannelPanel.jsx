@@ -119,7 +119,7 @@ function ChannelPanel({
           filteredChannels.map((channel, position) => {
             const selected = selectedSet.has(channel.index);
             const settings = channelSettings?.[channel.index] || {
-              color: "#ffffff",
+              color: null,
               opacity: 1,
             };
 
@@ -153,8 +153,8 @@ function ChannelPanel({
 
                   <div
                     className="channel-card__swatch"
-                    style={{ backgroundColor: settings.color }}
-                    title={settings.color}
+                    style={{ backgroundColor: settings.color || "#6b7280" }}
+                    title={settings.color || "No tint"}
                   />
                 </label>
 
@@ -166,15 +166,23 @@ function ChannelPanel({
                       <div className="channel-color-wrap">
                         <input
                           type="color"
-                          value={settings.color}
+                          value={settings.color || "#ffffff"}
                           onChange={(e) =>
                             onUpdate(channel.index, { color: e.target.value })
                           }
                           className="channel-color-input"
                         />
 
+                        <button
+                          type="button"
+                          className="channel-panel__action-btn"
+                          onClick={() => onUpdate(channel.index, { color: null })}
+                        >
+                          Clear tint
+                        </button>
+
                         <span className="channel-color-value">
-                          {settings.color.toUpperCase()}
+                          {settings.color ? settings.color.toUpperCase() : "No tint"}
                         </span>
                       </div>
                     </div>

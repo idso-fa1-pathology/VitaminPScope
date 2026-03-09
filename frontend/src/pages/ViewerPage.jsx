@@ -467,6 +467,7 @@ function ViewerPage() {
                     onApplyResult={applyResultLayers}
                     onRemoveResult={removeResult}
                     onClearResults={clearResults}
+                    onClose={() => setShowAiPanel(false)}
                     onUpdateResultDisplay={updateResultDisplay}
                     onUpdateResultLayerStyle={updateResultLayerStyle}
                   />

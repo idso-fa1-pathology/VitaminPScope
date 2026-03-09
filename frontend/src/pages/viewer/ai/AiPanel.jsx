@@ -20,6 +20,7 @@ function AiPanel({
   onResetDefaults,
   onRun,
   onClearOverlay,
+  onClose,
   isRunningAi,
   aiError,
   results,
@@ -49,6 +50,16 @@ function AiPanel({
             ROI-based inference with model and channel configuration
           </p>
         </div>
+
+        <button
+          type="button"
+          className="viewer-ai-panel__close"
+          onClick={onClose}
+          aria-label="Close AI panel"
+          title="Close AI panel"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="viewer-ai-panel__body">

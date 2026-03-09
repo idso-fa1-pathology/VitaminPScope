@@ -32,7 +32,9 @@ const DECK_CONTROLLER = {
 };
 
 function hexToRgb(hex) {
-  const clean = (hex || "#ffffff").replace("#", "");
+  if (!hex) return [255, 255, 255];
+
+  const clean = String(hex).replace("#", "");
   const expanded =
     clean.length === 3
       ? clean
@@ -277,7 +279,7 @@ const VivViewer = forwardRef(function VivViewer(
   const selectedChannelsSignature = useMemo(() => {
     const list = Array.isArray(selectedChannels) ? selectedChannels : [];
     return list
-      .map((ch) => `${ch.index}:${ch.color || "#ffffff"}:${ch.opacity ?? 1}`)
+      .map((ch) => `${ch.index}:${ch.color || "none"}:${ch.opacity ?? 1}`)
       .sort()
       .join("|");
   }, [selectedChannels]);
@@ -288,7 +290,7 @@ const VivViewer = forwardRef(function VivViewer(
       .filter((ch) => ch?.index !== undefined && ch?.index !== null)
       .map((ch) => ({
         index: Number(ch.index),
-        color: ch.color || "#ffffff",
+        color: ch.color ?? null,
         opacity: ch.opacity ?? 1,
       }))
       .filter((ch) => Number.isFinite(ch.index))
@@ -304,11 +306,14 @@ const VivViewer = forwardRef(function VivViewer(
       index: ch.index,
       color: ch.color,
       opacity: ch.opacity ?? 1,
-      url: `${API_BASE}/slide/${encodeURIComponent(
+      url:
+      `${API_BASE}/slide/${encodeURIComponent(
         slidePath
       )}/thumbnail?max_size=1400&frame=${encodeURIComponent(
         ch.index
-      )}&color=${encodeURIComponent(ch.color)}&source_id=${encodeURIComponent(sourceId)}`,
+      )}${
+        ch.color ? `&color=${encodeURIComponent(ch.color)}` : ""
+      }&source_id=${encodeURIComponent(sourceId)}`,
     }));
   }, [slide, activeChannels, sourceId]);
 

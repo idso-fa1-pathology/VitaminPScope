@@ -17,6 +17,7 @@ import {
   buildDefaultChannelSettings,
   getAiBadgeTone,
   isMultichannelSlide,
+  isOmeTiffSlide,
   normalizeChannels,
 } from "./viewerHelpers";
 
@@ -89,16 +90,16 @@ export function useViewerLogic({
         setSlideInfo(data);
 
         const resolvedChannels = normalizeChannels(data);
-        const shouldUseViv = isMultichannelSlide(data);
-
+        const shouldUseViv = isOmeTiffSlide(data);
+        
         if (shouldUseViv) {
           if (resolvedChannels.length) {
             setChannelSettings(buildDefaultChannelSettings(resolvedChannels));
-
+        
             const defaultEnabled = resolvedChannels
               .slice(0, Math.min(4, resolvedChannels.length))
               .map((channel) => channel.index);
-
+        
             setEnabledChannelIndexes(defaultEnabled);
           } else {
             setChannelSettings({});
@@ -124,7 +125,7 @@ export function useViewerLogic({
     return enabledChannelIndexes
       .map((index) => ({
         index,
-        ...(channelSettings[index] || { color: "#ffffff", opacity: 1 }),
+        ...(channelSettings[index] || { color: null, opacity: 1 }),
       }))
       .sort((a, b) => a.index - b.index);
   }, [enabledChannelIndexes, channelSettings]);
@@ -145,7 +146,7 @@ export function useViewerLogic({
       : null;
 
   const isMultichannel = useMemo(() => isMultichannelSlide(slideInfo), [slideInfo]);
-  const useVivViewer = isMultichannel;
+  const useVivViewer = useMemo(() => isOmeTiffSlide(slideInfo), [slideInfo]);
 
   const imageAdjustments =
     imageAdjustmentsBySlide[slideAnnotationKey] || DEFAULT_IMAGE_ADJUSTMENTS;
@@ -174,7 +175,7 @@ export function useViewerLogic({
     setChannelSettings((prev) => ({
       ...prev,
       [index]: {
-        ...(prev[index] || { color: "#ffffff", opacity: 1 }),
+        ...(prev[index] || { color: null, opacity: 1 }),
         ...patch,
       },
     }));

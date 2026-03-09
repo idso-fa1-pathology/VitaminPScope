@@ -37,7 +37,9 @@ export const DEFAULT_CHANNEL_PALETTE = [
     if (value === undefined || value === null) return "-";
     return `${formatNumber(value)} px`;
   }
-  
+  export function isOmeTiffSlide(slideInfo) {
+    return String(slideInfo?.type || "").toLowerCase() === "ome-tiff";
+  }
   export function formatMicronsPerPixelFromMm(mmValue) {
     if (mmValue === undefined || mmValue === null || Number.isNaN(Number(mmValue))) return "-";
     const micronsPerPixel = Number(mmValue) * 1000;
@@ -121,9 +123,9 @@ export const DEFAULT_CHANNEL_PALETTE = [
   export function buildDefaultChannelSettings(channels = []) {
     const nextSettings = {};
   
-    channels.forEach((channel, i) => {
+    channels.forEach((channel) => {
       nextSettings[channel.index] = {
-        color: getChannelColor(i),
+        color: null,
         opacity: 1,
       };
     });
