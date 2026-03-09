@@ -489,6 +489,7 @@ function ViewerPage() {
   const [showScaleBar, setShowScaleBar] = useState(true);
 
   const [showImageAdjustPanel, setShowImageAdjustPanel] = useState(false);
+  const [theme, setTheme] = useState("dark");
   const [imageAdjustmentsBySlide, setImageAdjustmentsBySlide] = useState({});
 
   const decodedSlidePath = decodeURIComponent(slideName || "");
@@ -845,6 +846,9 @@ function ViewerPage() {
     setShowBottomOverlay(false);
     setShowScaleBar(false);
   };
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const buildPreviewUrl = (slide) => {
     const slidePath = slide?.path || slide?.name;
@@ -872,7 +876,7 @@ function ViewerPage() {
   }
 
   return (
-    <div className="viewer-page">
+    <div className={`viewer-page viewer-page--${theme}`}>
       <header className="viewer-topbar">
         <div className="viewer-topbar__left">
           <button className="viewer-btn-ghost" onClick={() => navigate("/")} type="button">
@@ -894,6 +898,9 @@ function ViewerPage() {
         </div>
 
         <div className="viewer-topbar__right">
+          <button className="viewer-btn-secondary" onClick={handleToggleTheme} type="button">
+            {theme === "dark" ? "☀️ Light mode" : "🌙 Dark mode"}
+          </button>
           <div className="viewer-slide-switcher">
             <label className="viewer-slide-switcher__label">Switch slide</label>
             <select
