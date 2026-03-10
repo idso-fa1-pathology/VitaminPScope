@@ -117,6 +117,8 @@ function SlideManagerPage() {
   const [selectedSource, setSelectedSource] = useState(null);
 
   const navigate = useNavigate();
+  const [selectedSlides, setSelectedSlides] = useState([]);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const loadSources = async () => {
     try {
@@ -163,12 +165,39 @@ function SlideManagerPage() {
     loadSlides(currentPath, currentSourceId);
   }, [currentPath, currentSourceId]);
 
+  useEffect(() => {
+    setSelectedSlides([]);
+    setSelectionMode(false);
+  }, [currentPath, currentSourceId]);
+
   const handleOpenItem = (item) => {
+    if (selectionMode && item.kind === "slide") {
+      const itemKey = `${item.source_id || currentSourceId}::${item.path || item.name}`;
+  
+      setSelectedSlides((prev) => {
+        const exists = prev.some(
+          (slide) =>
+            `${slide.source_id || currentSourceId}::${slide.path || slide.name}` === itemKey
+        );
+  
+        if (exists) {
+          return prev.filter(
+            (slide) =>
+              `${slide.source_id || currentSourceId}::${slide.path || slide.name}` !== itemKey
+          );
+        }
+  
+        return [...prev, item];
+      });
+  
+      return;
+    }
+  
     if (item.kind === "folder") {
       setCurrentPath(item.path || item.name);
       return;
     }
-
+  
     navigate(
       `/viewer/${encodeURIComponent(item.path || item.name)}?source_id=${encodeURIComponent(
         item.source_id || currentSourceId
@@ -181,6 +210,25 @@ function SlideManagerPage() {
     const parts = currentPath.split("/").filter(Boolean);
     parts.pop();
     setCurrentPath(parts.join("/"));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSlides([]);
+    setSelectionMode(false);
+  };
+  
+  const handleOpenCompare = () => {
+    if (selectedSlides.length < 2) return;
+  
+    const encodedSlides = selectedSlides
+      .map((slide) => slide.path || slide.name)
+      .join("||");
+  
+    navigate(
+      `/compare?source_id=${encodeURIComponent(currentSourceId)}&slides=${encodeURIComponent(
+        encodedSlides
+      )}`
+    );
   };
 
   const handleCreateFolder = async () => {
@@ -404,7 +452,6 @@ function SlideManagerPage() {
                   {currentSource.read_only ? "Read-only" : "Writable"}
                 </span>
               ) : null}
-              <span className="hero-badge">{formatPathLabel(currentPath)}</span>
               <span className="hero-badge">
                 {counts.uniqueFormats} format{counts.uniqueFormats === 1 ? "" : "s"}
               </span>
@@ -454,9 +501,34 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => loadSlides(currentPath, currentSourceId)}
+              type="button"
             >
               Refresh
             </button>
+            <button
+              className="secondary-btn"
+              onClick={() => {
+                if (selectionMode) {
+                  handleClearSelection();
+                } else {
+                  setSelectionMode(true);
+                }
+              }}
+              type="button"
+            >
+              {selectionMode ? "Cancel Select" : "Select Slides"}
+            </button>
+
+            <button
+              className="primary-btn"
+              onClick={handleOpenCompare}
+              disabled={selectedSlides.length < 2}
+              type="button"
+            >
+              Compare / Sync View ({selectedSlides.length})
+            </button>    
+               
+              
           </div>
         </section>
 
@@ -600,6 +672,12 @@ function SlideManagerPage() {
                   onOpen={handleOpenItem}
                   onRename={openRenameModal}
                   onDelete={openDeleteModal}
+                  selectionMode={selectionMode}
+                  isSelected={selectedSlides.some(
+                    (slide) =>
+                      (slide.path || slide.name) === (item.path || item.name) &&
+                      (slide.source_id || currentSourceId) === (item.source_id || currentSourceId)
+                  )}
                 />
               ))}
             </div>

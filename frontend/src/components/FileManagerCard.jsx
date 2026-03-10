@@ -88,31 +88,84 @@ function getItemDescription(item) {
   return descriptionMap[type] || `${getItemLabel(item)} image file`;
 }
 
-function FileManagerCard({ item, onOpen, onRename, onDelete }) {
+function FileManagerCard({
+  item,
+  onOpen,
+  onRename,
+  onDelete,
+  selectionMode = false,
+  isSelected = false,
+}) {
   const isFolder = item.kind === "folder";
-
+  const canSelect = selectionMode && !isFolder;
   return (
-    <div
-      className={`slide-card ${isFolder ? "slide-card--folder" : ""}`}
-      onClick={() => onOpen(item)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          onOpen(item);
+      <div
+        className={[
+          "slide-card",
+          isFolder ? "slide-card--folder" : "",
+          canSelect && isSelected ? "slide-card--selected" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={() => onOpen(item)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen(item);
+          }
+        }}
+        style={
+          canSelect && isSelected
+            ? {
+                outline: "3px solid #2563eb",
+                outlineOffset: "2px",
+                boxShadow: "0 0 0 4px rgba(37, 99, 235, 0.15)",
+              }
+            : undefined
         }
-      }}
-    >
+      >
       <div className="slide-card__menu" onClick={(e) => e.stopPropagation()}>
-        <ActionMenu
-          isFolder={isFolder}
-          onOpen={() => onOpen(item)}
-          onRename={() => onRename(item)}
-          onDelete={() => onDelete(item)}
-        />
+        {!selectionMode ? (
+          <ActionMenu
+            isFolder={isFolder}
+            onOpen={() => onOpen(item)}
+            onRename={() => onRename(item)}
+            onDelete={() => onDelete(item)}
+          />
+        ) : null}
       </div>
 
-      <div className="slide-card__preview">{getCardIcon(item)}</div>
+      <div
+          className="slide-card__preview"
+          style={{ position: "relative" }}
+        >
+          {getCardIcon(item)}
+
+          {canSelect ? (
+            <span
+              style={{
+                position: "absolute",
+                top: -8,
+                right: -8,
+                width: 24,
+                height: 24,
+                borderRadius: "999px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                background: isSelected ? "#2563eb" : "#e2e8f0",
+                color: isSelected ? "#fff" : "#334155",
+                border: "2px solid #fff",
+              }}
+            >
+              {isSelected ? "✓" : ""}
+            </span>
+          ) : null}
+        </div>
 
       <div className="slide-card__body">
         <div className="slide-card__name" title={item.name}>

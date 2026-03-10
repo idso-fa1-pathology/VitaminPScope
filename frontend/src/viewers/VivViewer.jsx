@@ -319,6 +319,49 @@ function getContainerSize(node) {
   };
 }
 
+function getVivViewportState(viewState, containerSize, slideInfo) {
+  if (!viewState || !containerSize?.width || !containerSize?.height || !slideInfo?.metadata) {
+    return null;
+  }
+
+  const imageWidth = slideInfo.metadata.sizeX || 1;
+  const imageHeight = slideInfo.metadata.sizeY || 1;
+  const zoom = viewState.zoom ?? 0;
+  const scale = Math.pow(2, zoom);
+
+  const visibleWidth = containerSize.width / scale;
+  const visibleHeight = containerSize.height / scale;
+
+  const centerX = viewState.target?.[0] ?? imageWidth / 2;
+  const centerY = viewState.target?.[1] ?? imageHeight / 2;
+
+  return {
+    x: (centerX - visibleWidth / 2) / imageWidth,
+    y: (centerY - visibleHeight / 2) / imageHeight,
+    width: visibleWidth / imageWidth,
+    height: visibleHeight / imageHeight,
+  };
+}
+
+function viewportStatesAreClose(a, b, slideInfo, pixelTolerance = 2) {
+  if (!a || !b || !slideInfo?.metadata) return false;
+
+  const imageWidth = slideInfo.metadata.sizeX || 1;
+  const imageHeight = slideInfo.metadata.sizeY || 1;
+
+  const dx = Math.abs(a.x - b.x) * imageWidth;
+  const dy = Math.abs(a.y - b.y) * imageHeight;
+  const dw = Math.abs(a.width - b.width) * imageWidth;
+  const dh = Math.abs(a.height - b.height) * imageHeight;
+
+  return (
+    dx <= pixelTolerance &&
+    dy <= pixelTolerance &&
+    dw <= pixelTolerance &&
+    dh <= pixelTolerance
+  );
+}
+
 const VivViewer = forwardRef(function VivViewer(
   {
     slide,
@@ -339,6 +382,9 @@ const VivViewer = forwardRef(function VivViewer(
     showMiniMap = true,
     miniMapWidth = 180,
     miniMapMaxHeight = 220,
+    onViewportChange,
+    onInteractionStart,
+    onInteractionEnd,
   },
   ref
 ) {
@@ -350,6 +396,10 @@ const VivViewer = forwardRef(function VivViewer(
   const contrastReadyRef = useRef(false);
   const vivStableRef = useRef(false);
   const autoRequestRef = useRef(0);
+  const suppressOutgoingSyncRef = useRef(false);
+  const suppressTimeoutRef = useRef(null);
+  const lastSentViewportRef = useRef(null);
+  const lastAppliedViewportRef = useRef(null);
 
   const [loader, setLoader] = useState(null);
   const [deckInitialViewState, setDeckInitialViewState] = useState(null);
@@ -532,16 +582,35 @@ const VivViewer = forwardRef(function VivViewer(
     [containerSize.width, containerSize.height, viewState]
   );
 
-  const handleMiniMapNavigate = useCallback((point) => {
-    setViewState((prev) => {
-      if (!prev) return prev;
+  const clearSuppressionLater = useCallback(() => {
+    if (suppressTimeoutRef.current) {
+      clearTimeout(suppressTimeoutRef.current);
+    }
 
-      return {
-        ...prev,
-        target: [point.x, point.y, 0],
-      };
-    });
+    suppressTimeoutRef.current = setTimeout(() => {
+      suppressOutgoingSyncRef.current = false;
+    }, 120);
   }, []);
+
+  const handleMiniMapNavigate = useCallback(
+    (point) => {
+      onInteractionStart?.();
+
+      setViewState((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          target: [point.x, point.y, 0],
+        };
+      });
+
+      requestAnimationFrame(() => {
+        onInteractionEnd?.();
+      });
+    },
+    [onInteractionStart, onInteractionEnd]
+  );
 
   useImperativeHandle(
     ref,
@@ -567,14 +636,58 @@ const VivViewer = forwardRef(function VivViewer(
       resetView() {
         setViewState(deckInitialViewState || null);
       },
+      getViewportState() {
+        return getVivViewportState(viewState, containerSize, slideInfo);
+      },
+      setViewportState(nextState) {
+        if (!nextState || !slideInfo?.metadata || !containerSize.width || !containerSize.height) {
+          return;
+        }
+
+        const currentState = getVivViewportState(viewState, containerSize, slideInfo);
+        if (viewportStatesAreClose(currentState, nextState, slideInfo, 1)) {
+          return;
+        }
+
+        const imageWidth = slideInfo.metadata.sizeX || 1;
+        const imageHeight = slideInfo.metadata.sizeY || 1;
+
+        const visibleWidth = Math.max(0.0001, nextState.width || 1) * imageWidth;
+        const visibleHeight = Math.max(0.0001, nextState.height || 1) * imageHeight;
+
+        const centerX = ((nextState.x ?? 0) * imageWidth) + visibleWidth / 2;
+        const centerY = ((nextState.y ?? 0) * imageHeight) + visibleHeight / 2;
+
+        const zoomX = Math.log2(containerSize.width / visibleWidth);
+        const zoomY = Math.log2(containerSize.height / visibleHeight);
+        const zoom = Math.min(zoomX, zoomY);
+
+        suppressOutgoingSyncRef.current = true;
+        lastAppliedViewportRef.current = nextState;
+
+        setViewState((prev) => {
+          const base = prev || deckInitialViewState || {};
+          return {
+            ...base,
+            target: [centerX, centerY, 0],
+            zoom,
+          };
+        });
+
+        clearSuppressionLater();
+      },
     }),
-    [deckInitialViewState]
+    [clearSuppressionLater, deckInitialViewState, viewState, containerSize, slideInfo]
   );
 
   useEffect(() => {
     return () => {
       if (hideThumbRafRef.current) {
         cancelAnimationFrame(hideThumbRafRef.current);
+      }
+
+      if (suppressTimeoutRef.current) {
+        clearTimeout(suppressTimeoutRef.current);
       }
     };
   }, []);
@@ -998,8 +1111,37 @@ const VivViewer = forwardRef(function VivViewer(
             controller={controller}
             initialViewState={deckInitialViewState}
             viewState={viewState}
-            onViewStateChange={({ viewState: nextViewState }) => {
+            onViewStateChange={({ viewState: nextViewState, interactionState }) => {
               setViewState(nextViewState);
+
+              if (
+                interactionState?.isDragging ||
+                interactionState?.isPanning ||
+                interactionState?.isZooming ||
+                interactionState?.inTransition
+              ) {
+                onInteractionStart?.();
+              } else {
+                onInteractionEnd?.();
+              }
+
+              if (suppressOutgoingSyncRef.current) {
+                return;
+              }
+
+              const state = getVivViewportState(nextViewState, containerSize, slideInfo);
+              if (!state) return;
+
+              if (viewportStatesAreClose(state, lastAppliedViewportRef.current, slideInfo, 1)) {
+                return;
+              }
+
+              if (viewportStatesAreClose(state, lastSentViewportRef.current, slideInfo, 0.5)) {
+                return;
+              }
+
+              lastSentViewportRef.current = state;
+              onViewportChange?.(state);
             }}
             onAfterRender={handleAfterRender}
             layers={layer ? [layer] : []}

@@ -61,7 +61,6 @@ function formatMetricLength(meters) {
   return `${nm.toFixed(0)} nm`;
 }
 
-
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -164,12 +163,54 @@ function buildCanvasFilterString(adjustments, autoWindow) {
   return parts.join(" ");
 }
 
+function getOsdViewportState(viewer, slideInfo) {
+  if (!viewer?.viewport || !slideInfo?.metadata) return null;
+
+  const imageWidth = slideInfo.metadata.sizeX || 1;
+  const imageHeight = slideInfo.metadata.sizeY || 1;
+  const bounds = viewer.viewport.getBounds(true);
+
+  const topLeft = viewer.viewport.viewportToImageCoordinates(
+    new OpenSeadragon.Point(bounds.x, bounds.y)
+  );
+
+  const bottomRight = viewer.viewport.viewportToImageCoordinates(
+    new OpenSeadragon.Point(bounds.x + bounds.width, bounds.y + bounds.height)
+  );
+
+  return {
+    x: topLeft.x / imageWidth,
+    y: topLeft.y / imageHeight,
+    width: Math.max(0.000001, (bottomRight.x - topLeft.x) / imageWidth),
+    height: Math.max(0.000001, (bottomRight.y - topLeft.y) / imageHeight),
+  };
+}
+
+function viewportStatesAreClose(a, b, slideInfo, pixelTolerance = 2) {
+  if (!a || !b || !slideInfo?.metadata) return false;
+
+  const imageWidth = slideInfo.metadata.sizeX || 1;
+  const imageHeight = slideInfo.metadata.sizeY || 1;
+
+  const dx = Math.abs(a.x - b.x) * imageWidth;
+  const dy = Math.abs(a.y - b.y) * imageHeight;
+  const dw = Math.abs(a.width - b.width) * imageWidth;
+  const dh = Math.abs(a.height - b.height) * imageHeight;
+
+  return (
+    dx <= pixelTolerance &&
+    dy <= pixelTolerance &&
+    dw <= pixelTolerance &&
+    dh <= pixelTolerance
+  );
+}
+
 const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
   {
     slide,
     slideInfo,
     sourceId = "default",
-    selectedChannels,
+    selectedChannels = [],
     activeTool = TOOL_PAN,
     annotations = [],
     aiLayers = [],
@@ -181,6 +222,9 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     annotationColor,
     imageAdjustments,
     buildPreviewUrl,
+    onViewportChange,
+    onInteractionStart,
+    onInteractionEnd,
   },
   ref
 ) {
@@ -188,28 +232,128 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
   const viewerRef = useRef(null);
   const autoRequestRef = useRef(0);
 
+  const suppressOutgoingSyncRef = useRef(false);
+  const suppressTimeoutRef = useRef(null);
+  const emitRafRef = useRef(0);
+  const lastSentViewportRef = useRef(null);
+  const lastAppliedViewportRef = useRef(null);
+
   const [zoomState, setZoomState] = useState({
     viewportZoom: null,
     imageZoom: null,
   });
   const [autoWindow, setAutoWindow] = useState(null);
 
-  useImperativeHandle(ref, () => ({
-    zoomIn() {
-      if (!viewerRef.current) return;
-      viewerRef.current.viewport.zoomBy(1.2);
-      viewerRef.current.viewport.applyConstraints();
-    },
-    zoomOut() {
-      if (!viewerRef.current) return;
-      viewerRef.current.viewport.zoomBy(0.8);
-      viewerRef.current.viewport.applyConstraints();
-    },
-    resetView() {
-      if (!viewerRef.current) return;
-      viewerRef.current.viewport.goHome();
-    },
-  }));
+  const selectedChannelsKey = useMemo(() => {
+    return JSON.stringify(
+      (selectedChannels || []).map((ch) => ({
+        index: ch.index,
+        color: ch.color,
+        opacity: ch.opacity,
+      }))
+    );
+  }, [selectedChannels]);
+
+  const clearSuppressionLater = useCallback(() => {
+    if (suppressTimeoutRef.current) {
+      clearTimeout(suppressTimeoutRef.current);
+    }
+
+    suppressTimeoutRef.current = setTimeout(() => {
+      suppressOutgoingSyncRef.current = false;
+    }, 120);
+  }, []);
+
+  const emitViewportNow = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (!viewer?.viewport) return;
+
+    const viewportZoom = viewer.viewport.getZoom(true);
+    const imageZoom = viewer.viewport.viewportToImageZoom(viewportZoom);
+
+    setZoomState({
+      viewportZoom,
+      imageZoom,
+    });
+
+    if (suppressOutgoingSyncRef.current) return;
+
+    const state = getOsdViewportState(viewer, slideInfo);
+    if (!state) return;
+
+    if (viewportStatesAreClose(state, lastAppliedViewportRef.current, slideInfo, 1)) {
+      return;
+    }
+
+    if (viewportStatesAreClose(state, lastSentViewportRef.current, slideInfo, 0.5)) {
+      return;
+    }
+
+    lastSentViewportRef.current = state;
+    onViewportChange?.(state);
+  }, [onViewportChange, slideInfo]);
+
+  const scheduleEmitViewport = useCallback(() => {
+    if (emitRafRef.current) return;
+
+    emitRafRef.current = requestAnimationFrame(() => {
+      emitRafRef.current = 0;
+      emitViewportNow();
+    });
+  }, [emitViewportNow]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      zoomIn() {
+        if (!viewerRef.current) return;
+        viewerRef.current.viewport.zoomBy(1.2);
+        viewerRef.current.viewport.applyConstraints();
+      },
+      zoomOut() {
+        if (!viewerRef.current) return;
+        viewerRef.current.viewport.zoomBy(0.8);
+        viewerRef.current.viewport.applyConstraints();
+      },
+      resetView() {
+        if (!viewerRef.current) return;
+        viewerRef.current.viewport.goHome(true);
+      },
+      getViewportState() {
+        return getOsdViewportState(viewerRef.current, slideInfo);
+      },
+      setViewportState(nextState) {
+        const viewer = viewerRef.current;
+        if (!viewer?.viewport || !slideInfo?.metadata || !nextState) return;
+
+        const currentState = getOsdViewportState(viewer, slideInfo);
+        if (viewportStatesAreClose(currentState, nextState, slideInfo, 1)) {
+          return;
+        }
+
+        const imageWidth = slideInfo.metadata.sizeX || 1;
+        const imageHeight = slideInfo.metadata.sizeY || 1;
+
+        const imageRect = new OpenSeadragon.Rect(
+          (nextState.x ?? 0) * imageWidth,
+          (nextState.y ?? 0) * imageHeight,
+          Math.max(0.0001, (nextState.width ?? 1) * imageWidth),
+          Math.max(0.0001, (nextState.height ?? 1) * imageHeight)
+        );
+
+        const viewportRect = viewer.viewport.imageToViewportRectangle(imageRect);
+
+        suppressOutgoingSyncRef.current = true;
+        lastAppliedViewportRef.current = nextState;
+
+        viewer.viewport.fitBounds(viewportRect, true);
+        viewer.viewport.applyConstraints(true);
+
+        clearSuppressionLater();
+      },
+    }),
+    [clearSuppressionLater, slideInfo]
+  );
 
   useEffect(() => {
     if (!slide || !slideInfo || !containerRef.current) return;
@@ -226,12 +370,12 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     const viewer = OpenSeadragon({
       element: containerRef.current,
       prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
-      animationTime: 0.5,
-      blendTime: 0.1,
+      animationTime: 0,
+      blendTime: 0,
       constrainDuringPan: true,
       maxZoomPixelRatio: 2,
       visibilityRatio: 1,
-      zoomPerScroll: 2,
+      zoomPerScroll: 1.2,
       showNavigator: true,
       showNavigationControl: false,
       crossOriginPolicy: "Anonymous",
@@ -242,27 +386,48 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     viewerRef.current = viewer;
     window.__osdViewer = viewer;
 
-    function updateZoomState() {
-      if (!viewer.viewport) return;
-
-      const viewportZoom = viewer.viewport.getZoom(true);
-      const imageZoom = viewer.viewport.viewportToImageZoom(viewportZoom);
-
-      setZoomState({
-        viewportZoom,
-        imageZoom,
-      });
-    }
-
-    viewer.addHandler("open", () => {
+    const handleOpen = () => {
       viewer.viewport.goHome(true);
-      updateZoomState();
-    });
+      scheduleEmitViewport();
+    };
 
-    viewer.addHandler("zoom", updateZoomState);
-    viewer.addHandler("pan", updateZoomState);
-    viewer.addHandler("animation", updateZoomState);
-    viewer.addHandler("resize", updateZoomState);
+    const handlePan = () => {
+      scheduleEmitViewport();
+    };
+
+    const handleZoom = () => {
+      scheduleEmitViewport();
+    };
+
+    const handleResize = () => {
+      scheduleEmitViewport();
+    };
+
+    const handleCanvasPress = () => {
+      onInteractionStart?.();
+    };
+
+    const handleCanvasDrag = () => {
+      onInteractionStart?.();
+    };
+
+    const handleCanvasScroll = () => {
+      onInteractionStart?.();
+    };
+
+    const handleCanvasRelease = () => {
+      onInteractionEnd?.();
+    };
+
+    viewer.addHandler("open", handleOpen);
+    viewer.addHandler("pan", handlePan);
+    viewer.addHandler("zoom", handleZoom);
+    viewer.addHandler("resize", handleResize);
+
+    viewer.addHandler("canvas-press", handleCanvasPress);
+    viewer.addHandler("canvas-drag", handleCanvasDrag);
+    viewer.addHandler("canvas-scroll", handleCanvasScroll);
+    viewer.addHandler("canvas-release", handleCanvasRelease);
 
     if (!isOme) {
       viewer.open(makeTileSource(slidePath, metadata, { sourceId }));
@@ -302,17 +467,45 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         });
 
         viewer.viewport.goHome(true);
-        updateZoomState();
+        scheduleEmitViewport();
       });
     }
 
     return () => {
+      if (emitRafRef.current) {
+        cancelAnimationFrame(emitRafRef.current);
+        emitRafRef.current = 0;
+      }
+
+      if (suppressTimeoutRef.current) {
+        clearTimeout(suppressTimeoutRef.current);
+      }
+
+      viewer.removeHandler("open", handleOpen);
+      viewer.removeHandler("pan", handlePan);
+      viewer.removeHandler("zoom", handleZoom);
+      viewer.removeHandler("resize", handleResize);
+
+      viewer.removeHandler("canvas-press", handleCanvasPress);
+      viewer.removeHandler("canvas-drag", handleCanvasDrag);
+      viewer.removeHandler("canvas-scroll", handleCanvasScroll);
+      viewer.removeHandler("canvas-release", handleCanvasRelease);
+
       if (viewerRef.current) {
         viewerRef.current.destroy();
         viewerRef.current = null;
       }
     };
-  }, [slide, slideInfo, selectedChannels, sourceId]);
+  }, [
+    slide,
+    slideInfo,
+    sourceId,
+    selectedChannelsKey,
+    scheduleEmitViewport,
+    onInteractionStart,
+    onInteractionEnd,
+    selectedChannels,
+  ]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -399,13 +592,11 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     applyCanvasFilter();
 
     viewer.addHandler("update-viewport", applyCanvasFilter);
-    viewer.addHandler("animation", applyCanvasFilter);
     viewer.addHandler("open", applyCanvasFilter);
     viewer.addHandler("tile-drawn", applyCanvasFilter);
 
     return () => {
       viewer.removeHandler("update-viewport", applyCanvasFilter);
-      viewer.removeHandler("animation", applyCanvasFilter);
       viewer.removeHandler("open", applyCanvasFilter);
       viewer.removeHandler("tile-drawn", applyCanvasFilter);
 
