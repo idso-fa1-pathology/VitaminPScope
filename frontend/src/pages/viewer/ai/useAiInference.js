@@ -13,8 +13,8 @@ const DEFAULT_MODELS = [
     label: "Vitamin P Flex",
     modelName: "flex",
     checkpointName: "vitamin_p_flex.pth",
-    device: "cpu",
-    batchSize: 1,
+    device: "cuda",
+    batchSize: 8,
     branchesByMode: {
       he: ["he_nuclei", "he_cell"],
       mif: ["mif_nuclei", "mif_cell"],
@@ -22,8 +22,42 @@ const DEFAULT_MODELS = [
   },
 ];
 
+function normalizeChannelIndex(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+function sanitizeMembraneChannels(membraneChannels = [], nuclearChannel) {
+  const nuclear = normalizeChannelIndex(nuclearChannel);
+
+  return [...new Set(
+    membraneChannels
+      .map(normalizeChannelIndex)
+      .filter((value) => value !== null && value !== nuclear)
+  )].sort((a, b) => a - b);
+}
+
+function buildOrderedChannelMetadata(channels = []) {
+  const sortedChannels = [...channels]
+    .filter((ch) => normalizeChannelIndex(ch?.index) !== null)
+    .sort((a, b) => Number(a.index) - Number(b.index));
+
+  return {
+    channel_names: Object.fromEntries(
+      sortedChannels.map((ch) => [
+        Number(ch.index),
+        ch?.name || `Channel ${ch.index}`,
+      ])
+    ),
+    channel_indices: sortedChannels.map((ch) => Number(ch.index)),
+    channel_count: sortedChannels.length,
+  };
+}
+
 function buildChannelNameMap(channels = []) {
-  return Object.fromEntries(channels.map((ch) => [ch.index, ch.name]));
+  return Object.fromEntries(
+    channels.map((ch) => [Number(ch.index), ch.name || `Channel ${ch.index}`])
+  );
 }
 
 function enrichLayersWithDisplay(layers = []) {
@@ -80,14 +114,21 @@ export function useAiInference({
 
   useEffect(() => {
     const nextAiMode = guessAiMode(slideInfo);
-    const nextNuclearChannel = guessNuclearChannel(normalizedChannels);
-    const nextMembraneChannels = guessMembraneChannels(
+    const guessedNuclearChannel = guessNuclearChannel(normalizedChannels);
+    const nextNuclearChannel = normalizeChannelIndex(guessedNuclearChannel);
+
+    const guessedMembraneChannels = guessMembraneChannels(
       normalizedChannels,
       nextNuclearChannel
     );
 
+    const nextMembraneChannels = sanitizeMembraneChannels(
+      guessedMembraneChannels,
+      nextNuclearChannel
+    );
+
     setAiMode(nextAiMode);
-    setAiNuclearChannel(nextNuclearChannel);
+    setAiNuclearChannel(nextNuclearChannel ?? "");
     setAiMembraneChannels(nextMembraneChannels);
     setAiMembraneCombination("max");
     setAiError("");
@@ -103,14 +144,21 @@ export function useAiInference({
 
   const handleResetAiDefaults = () => {
     const nextAiMode = guessAiMode(slideInfo);
-    const nextNuclearChannel = guessNuclearChannel(normalizedChannels);
-    const nextMembraneChannels = guessMembraneChannels(
+    const guessedNuclearChannel = guessNuclearChannel(normalizedChannels);
+    const nextNuclearChannel = normalizeChannelIndex(guessedNuclearChannel);
+
+    const guessedMembraneChannels = guessMembraneChannels(
       normalizedChannels,
       nextNuclearChannel
     );
 
+    const nextMembraneChannels = sanitizeMembraneChannels(
+      guessedMembraneChannels,
+      nextNuclearChannel
+    );
+
     setAiMode(nextAiMode);
-    setAiNuclearChannel(nextNuclearChannel);
+    setAiNuclearChannel(nextNuclearChannel ?? "");
     setAiMembraneChannels(nextMembraneChannels);
     setAiMembraneCombination("max");
     setAiError("");
@@ -247,12 +295,19 @@ export function useAiInference({
       return;
     }
 
-    if (aiMode === "mif" && !aiNuclearChannel) {
-      setAiError("Select a nuclear channel for MIF inference.");
+    const nuclearChannel = normalizeChannelIndex(aiNuclearChannel);
+    const membraneChannels = sanitizeMembraneChannels(
+      aiMembraneChannels,
+      nuclearChannel
+    );
+    const orderedChannelMetadata = buildOrderedChannelMetadata(normalizedChannels);
+
+    if (aiMode === "mif" && nuclearChannel === null) {
+      setAiError("Select a valid nuclear channel for MIF inference.");
       return;
     }
 
-    if (aiMode === "mif" && !aiMembraneChannels.length) {
+    if (aiMode === "mif" && membraneChannels.length === 0) {
       setAiError("Select at least one membrane channel for MIF inference.");
       return;
     }
@@ -281,13 +336,26 @@ export function useAiInference({
         mif_channel_config:
           aiMode === "mif"
             ? {
-                nuclear_channel: Number(aiNuclearChannel),
-                membrane_channel: aiMembraneChannels.map(Number),
+                nuclear_channel: nuclearChannel,
+                membrane_channel: membraneChannels,
                 membrane_combination: aiMembraneCombination || "max",
-                channel_names: buildChannelNameMap(normalizedChannels),
+                channel_names:
+                  orderedChannelMetadata.channel_names ||
+                  buildChannelNameMap(normalizedChannels),
+                channel_indices: orderedChannelMetadata.channel_indices || [],
+                channel_count:
+                  orderedChannelMetadata.channel_count ||
+                  normalizedChannels.length,
               }
             : null,
       };
+
+      console.log("[useAiInference] ROI inference payload", {
+        slidePath: selectedSlide.path,
+        roi,
+        mode: aiMode,
+        mif_channel_config: payload.mif_channel_config,
+      });
 
       const result = await runRoiAiSegmentation(
         selectedSlide.path,

@@ -19,7 +19,7 @@ class RoiSegmentationRequest(BaseModel):
     # Model configuration
     model_name: str = "flex"
     checkpoint_name: Optional[str] = None
-    device: str = "cpu"
+    device: str = "cuda"
 
     # Branches to run
     branches: List[str] = Field(
@@ -34,7 +34,7 @@ class RoiSegmentationRequest(BaseModel):
     # Tiling parameters
     patch_size: int = 512
     overlap: int = 64
-    batch_size: int = 1
+    batch_size: int = 8
 
     # Tissue filtering
     filter_tissue: bool = False

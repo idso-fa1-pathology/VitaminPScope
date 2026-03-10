@@ -6,3 +6,5 @@ large-image-source-ometiff
 Pillow
 requests
 python-multipart
+tifffile
+opencv-python-headless

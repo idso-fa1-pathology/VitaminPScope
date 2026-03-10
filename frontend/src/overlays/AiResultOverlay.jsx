@@ -73,7 +73,7 @@ function renderFeature(feature, imageToScreen, layer, keyPrefix) {
   });
 }
 
-function AiResultOverlay({ layers = [], imageToScreen }) {
+function AiResultOverlay({ layers = [], imageToScreen, renderTick = 0 }) {
   const visibleLayers = layers.filter(
     (layer) =>
       layer &&
@@ -86,6 +86,7 @@ function AiResultOverlay({ layers = [], imageToScreen }) {
 
   return (
     <svg
+      data-render-tick={renderTick}
       style={{
         position: "absolute",
         inset: 0,

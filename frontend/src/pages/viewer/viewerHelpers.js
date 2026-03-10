@@ -155,17 +155,30 @@ export const DEFAULT_CHANNEL_PALETTE = [
   export function guessNuclearChannel(channels = []) {
     if (!channels.length) return "";
   
-    const preferredNames = ["dapi", "nucleus", "nuclei", "dna", "hoechst"];
-    const match = channels.find((ch) =>
-      preferredNames.some((term) => String(ch.name || "").toLowerCase().includes(term))
+    const normalized = channels
+      .map((ch, position) => {
+        const index = Number(ch?.index);
+        return {
+          ...ch,
+          index: Number.isFinite(index) ? index : position,
+          name: String(ch?.name || "").toLowerCase(),
+        };
+      })
+      .filter((ch) => Number.isInteger(ch.index) && ch.index >= 0);
+  
+    if (!normalized.length) return "";
+  
+    const preferredNames = ["dapi", "nucleus", "nuclei", "dna", "hoechst", "syto"];
+  
+    const namedMatch = normalized.find((ch) =>
+      preferredNames.some((term) => ch.name.includes(term))
     );
+    if (namedMatch) return String(namedMatch.index);
   
-    if (match) return String(match.index);
+    const channelZero = normalized.find((ch) => ch.index === 0);
+    if (channelZero) return "0";
   
-    const fallback = channels.find((ch) => Number(ch.index) === 2);
-    if (fallback) return String(fallback.index);
-  
-    return String(channels[channels.length - 1].index);
+    return String(normalized[0].index);
   }
   
   export function guessMembraneChannels(channels = [], nuclearChannel) {

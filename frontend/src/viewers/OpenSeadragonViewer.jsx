@@ -242,6 +242,7 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     viewportZoom: null,
     imageZoom: null,
   });
+  const [overlayRenderTick, setOverlayRenderTick] = useState(0);
   const [autoWindow, setAutoWindow] = useState(null);
 
   const selectedChannelsKey = useMemo(() => {
@@ -402,6 +403,9 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     const handleResize = () => {
       scheduleEmitViewport();
     };
+    const handleViewportUpdate = () => {
+      setOverlayRenderTick((t) => t + 1);
+    };
 
     const handleCanvasPress = () => {
       onInteractionStart?.();
@@ -423,6 +427,8 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
     viewer.addHandler("pan", handlePan);
     viewer.addHandler("zoom", handleZoom);
     viewer.addHandler("resize", handleResize);
+    viewer.addHandler("update-viewport", handleViewportUpdate);
+    viewer.addHandler("animation", handleViewportUpdate);
 
     viewer.addHandler("canvas-press", handleCanvasPress);
     viewer.addHandler("canvas-drag", handleCanvasDrag);
@@ -485,6 +491,8 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
       viewer.removeHandler("pan", handlePan);
       viewer.removeHandler("zoom", handleZoom);
       viewer.removeHandler("resize", handleResize);
+      viewer.removeHandler("update-viewport", handleViewportUpdate);
+      viewer.removeHandler("animation", handleViewportUpdate);
 
       viewer.removeHandler("canvas-press", handleCanvasPress);
       viewer.removeHandler("canvas-drag", handleCanvasDrag);
@@ -661,7 +669,11 @@ const OpenSeadragonViewer = forwardRef(function OpenSeadragonViewer(
         overflow: "hidden",
       }}
     >
-      <AiResultOverlay layers={aiLayers} imageToScreen={imageToScreen} />
+      <AiResultOverlay
+        layers={aiLayers}
+        imageToScreen={imageToScreen}
+        renderTick={overlayRenderTick}
+      />
 
       <AnnotationOverlay
         activeTool={activeTool}

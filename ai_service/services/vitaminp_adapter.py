@@ -33,6 +33,13 @@ class VitaminPAdapter:
     def __init__(self):
         self._loaded_models: Dict[str, torch.nn.Module] = {}
 
+    def _normalize_device(self, device: Optional[str]) -> str:
+        if device in (None, "", "auto"):
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        if device == "cuda" and not torch.cuda.is_available():
+            return "cpu"
+        return device
+
     def _resolve_checkpoint_path(
         self,
         model_name: str,
@@ -61,6 +68,8 @@ class VitaminPAdapter:
         device: str,
         checkpoint_name: Optional[str] = None,
     ):
+        device = self._normalize_device(device)
+
         config = MODEL_CONFIG[model_name]
         checkpoint_path = self._resolve_checkpoint_path(model_name, checkpoint_name)
 
@@ -87,6 +96,8 @@ class VitaminPAdapter:
         device: str = "cpu",
         checkpoint_name: Optional[str] = None,
     ):
+        device = self._normalize_device(device)
+
         key = f"{model_name}:{device}:{checkpoint_name or 'default'}"
 
         if key not in self._loaded_models:
@@ -147,6 +158,9 @@ class VitaminPAdapter:
         mpp_override: Optional[float] = None,
         mif_channel_config: Optional[dict] = None,
     ) -> Dict[str, Any]:
+
+        device = self._normalize_device(device)
+
         if branches is None:
             branches = ["he_nuclei", "he_cell"]
 

@@ -23,7 +23,7 @@ export default function useAiOverlay({ slidePath }) {
       mode = "he",
       modelName = "flex",
       checkpointName = null,
-      device = "cpu",
+      device = "auto",
       branches,
       targetMpp = 0.2125,
       magnification = 40,

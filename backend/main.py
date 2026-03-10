@@ -255,29 +255,47 @@ def get_slide_type_and_metadata(source_id: str, filename: str):
 def extract_channels(metadata: dict) -> list:
     channels = []
 
-    if "channels" in metadata and isinstance(metadata["channels"], list):
-        channels = [
+    if "channels" in metadata and isinstance(metadata["channels"], list) and metadata["channels"]:
+        return [
             {"index": i, "name": ch if ch is not None else f"Channel {i + 1}"}
             for i, ch in enumerate(metadata["channels"])
         ]
-    elif "frames" in metadata and isinstance(metadata["frames"], list):
+
+    frames = metadata.get("frames")
+    band_count = int(metadata.get("bandCount") or 0)
+
+    if isinstance(frames, list) and len(frames) > 1 and band_count <= 1:
+        return [
+            {
+                "index": i,
+                "name": f"Channel {i + 1}",
+                "frame": frame.get("Frame", i),
+            }
+            for i, frame in enumerate(frames)
+        ]
+
+    if isinstance(frames, list):
         seen = set()
-        for frame in metadata["frames"]:
+        for frame in frames:
             idx = frame.get("IndexC")
             name = frame.get("Channel", f"Channel {idx + 1}" if idx is not None else "Channel")
             if idx is not None and idx not in seen:
-                channels.append({"index": idx, "name": name})
+                channels.append({
+                    "index": idx,
+                    "name": name,
+                    "frame": frame.get("Frame", idx),
+                })
                 seen.add(idx)
-    else:
-        band_count = metadata.get("bandCount")
-        if band_count:
-            channels = [
-                {"index": i, "name": f"Channel {i + 1}"}
-                for i in range(int(band_count))
-            ]
+        if channels:
+            return channels
 
-    return channels
+    if band_count > 0:
+        return [
+            {"index": i, "name": f"Channel {i + 1}"}
+            for i in range(band_count)
+        ]
 
+    return []
 
 def unpack_image_result(result, default_mime="image/jpeg"):
     if isinstance(result, tuple):
