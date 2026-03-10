@@ -181,76 +181,106 @@ class MultiFormatImageLoader:
 
     @staticmethod
     def load_mif_image(image_path, channel_config=None):
-        """Load MIF image with channel configuration (supports PNG and TIFF)
-        
-        Args:
-            image_path: Path to MIF image (PNG or TIFF)
-            channel_config: ChannelConfig object for channel processing
-            
+        """Load MIF image with channel configuration.
+
         Returns:
-            numpy array: MIF image with shape (C, H, W) where C=2 (nuclear, membrane)
+            numpy array: MIF image with shape (2, H, W) after channel selection
+                        or (C, H, W) before selection.
         """
         import cv2
-        
+
         image_path = Path(image_path)
-        
+
         if not image_path.exists():
             raise FileNotFoundError(f"Image not found: {image_path}")
-        
-        # Detect file format
+
+        file_name_lower = image_path.name.lower()
         file_ext = image_path.suffix.lower()
-        
+
         if file_ext in ['.png', '.jpg', '.jpeg']:
-            # Load PNG/JPG with OpenCV
             mif_array = cv2.imread(str(image_path), cv2.IMREAD_UNCHANGED)
-            
+
             if mif_array is None:
                 raise ValueError(f"Failed to load image: {image_path}")
-            
-            # Convert BGR to RGB if needed
-            if len(mif_array.shape) == 3 and mif_array.shape[2] == 3:
+
+            if mif_array.ndim == 3 and mif_array.shape[2] == 3:
                 mif_array = cv2.cvtColor(mif_array, cv2.COLOR_BGR2RGB)
-            
-            # Convert to float32 and normalize to [0, 1]
+
             if mif_array.dtype == np.uint8:
                 mif_array = mif_array.astype(np.float32) / 255.0
             elif mif_array.dtype == np.uint16:
                 mif_array = mif_array.astype(np.float32) / 65535.0
-            
-            # Convert from (H, W, C) to (C, H, W) if needed
-            if len(mif_array.shape) == 3:
+            else:
+                mif_array = mif_array.astype(np.float32)
+
+            if mif_array.ndim == 2:
+                mif_array = mif_array[np.newaxis, :, :]
+            elif mif_array.ndim == 3:
+                # PNG/JPG path is usually HWC -> CHW
                 mif_array = np.transpose(mif_array, (2, 0, 1))
-            elif len(mif_array.shape) == 2:
-                # Grayscale - add channel dimension
-                mif_array = mif_array[np.newaxis, :, :]
-        
-        elif file_ext in ['.tif', '.tiff']:
-            # Load TIFF with tifffile
-            import tifffile
-            mif_array = tifffile.imread(str(image_path))
-            
-            # Ensure float32 and normalize
+
+        elif file_ext in ['.tif', '.tiff'] or file_name_lower.endswith(('.ome.tif', '.ome.tiff')):
+            axes = None
+            with tifffile.TiffFile(str(image_path)) as tif:
+                mif_array = tif.asarray()
+                mif_array = np.asarray(mif_array)
+
+                try:
+                    if tif.series:
+                        axes = getattr(tif.series[0], "axes", None)
+                except Exception:
+                    axes = None
+
+            print(f"[load_mif_image] raw shape={mif_array.shape}, axes={axes}, dtype={mif_array.dtype}")
+
             if mif_array.dtype == np.uint8:
                 mif_array = mif_array.astype(np.float32) / 255.0
             elif mif_array.dtype == np.uint16:
                 mif_array = mif_array.astype(np.float32) / 65535.0
-            
-            # Handle different TIFF shapes
-            if len(mif_array.shape) == 2:
+            else:
+                mif_array = mif_array.astype(np.float32)
+
+            # Normalize to CHW
+            if mif_array.ndim == 2:
                 mif_array = mif_array[np.newaxis, :, :]
-            elif len(mif_array.shape) == 3:
-                # Check if it's (H, W, C) and convert to (C, H, W)
-                if mif_array.shape[2] < mif_array.shape[0]:
+
+            elif mif_array.ndim == 3:
+                # Prefer explicit axes metadata when available
+                if axes == "CYX":
+                    pass
+                elif axes in ("YXC",):
                     mif_array = np.transpose(mif_array, (2, 0, 1))
-        
-        else:
-            raise ValueError(f"Unsupported file format: {file_ext}. Use PNG, JPEG, or TIFF.")
-        
-        # Apply channel configuration
+                elif axes in ("IYX", "SYX", "QYX"):
+                    # plane-stack already channel-like in first axis
+                    pass
+                else:
+                    # Fallback without fragile channel-count thresholds:
+                    # - if first two dims are clearly spatial, treat as HWC
+                    # - if last two dims are clearly spatial, treat as CHW
+                    if mif_array.shape[0] > 4 and mif_array.shape[1] > 4:
+                        mif_array = np.transpose(mif_array, (2, 0, 1))  # HWC -> CHW
+                    elif mif_array.shape[1] > 4 and mif_array.shape[2] > 4:
+                        pass  # CHW
+                    else:
+                        raise ValueError(
+                            f"Ambiguous TIFF shape for MIF image: {mif_array.shape}, axes={axes}"
+                        )
+            else:
+                raise ValueError(
+                    f"Unsupported TIFF ndim for MIF image: ndim={mif_array.ndim}, shape={mif_array.shape}, axes={axes}"
+                )
+            
+        print(f"[load_mif_image] normalized CHW shape={mif_array.shape}, dtype={mif_array.dtype}")
+
         if channel_config is not None:
+            print(
+                "[load_mif_image] channel config:",
+                f"nuclear={channel_config.nuclear_channel},",
+                f"membrane={channel_config.membrane_channel},",
+                f"combination={channel_config.membrane_combination}"
+            )
             mif_2ch = channel_config.select_channels(mif_array)
         else:
-            # Default: use first 2 channels
             if mif_array.ndim == 3 and mif_array.shape[0] >= 2:
                 mif_2ch = mif_array[:2, :, :]
             else:
@@ -258,9 +288,13 @@ class MultiFormatImageLoader:
                     f"Cannot auto-select channels from shape {mif_array.shape}. "
                     f"Please provide channel_config."
                 )
-        
-        print(f"Output: shape={mif_2ch.shape}, dtype={mif_2ch.dtype}, range=[{mif_2ch.min():.3f}, {mif_2ch.max():.3f}]")
-        
+
+        print(
+            f"[load_mif_image] output shape={mif_2ch.shape}, dtype={mif_2ch.dtype}, "
+            f"ch0_range=[{mif_2ch[0].min():.6f}, {mif_2ch[0].max():.6f}], "
+            f"ch1_range=[{mif_2ch[1].min():.6f}, {mif_2ch[1].max():.6f}]"
+        )
+
         return mif_2ch
 # NEW: Reader classes for streaming tile access
 
@@ -316,10 +350,35 @@ class TiffReader:
         # Get first page/series
         if hasattr(self.tif, 'series'):
             self.page = self.tif.series[0]
-            self.height, self.width = self.page.shape[:2]
+            shape = self.page.shape
         else:
             self.page = self.tif.pages[0]
-            self.height, self.width = self.page.shape[:2]
+            shape = self.page.shape
+
+        if len(shape) == 2:
+            self.height, self.width = shape
+        elif len(shape) == 3:
+            axes = None
+            try:
+                if hasattr(self.tif, "series") and self.tif.series:
+                    axes = getattr(self.tif.series[0], "axes", None)
+            except Exception:
+                axes = None
+
+            if axes == "CYX" or axes in ("IYX", "SYX", "QYX"):
+                self.height, self.width = shape[1], shape[2]
+            elif axes == "YXC":
+                self.height, self.width = shape[0], shape[1]
+            else:
+                # fallback
+                if shape[0] > 4 and shape[1] > 4:
+                    self.height, self.width = shape[0], shape[1]   # HWC
+                elif shape[1] > 4 and shape[2] > 4:
+                    self.height, self.width = shape[1], shape[2]   # CHW
+                else:
+                    raise ValueError(f"Unsupported TIFF shape in TiffReader: {shape}, axes={axes}")
+        else:
+            raise ValueError(f"Unsupported TIFF shape in TiffReader: {shape}")
         
         # ← ADD MPP DETECTION FOR OME-TIFF
         self.mpp = None
@@ -359,44 +418,54 @@ class TiffReader:
             pass  # If metadata reading fails, mpp stays None
     
     def read_region(self, location, size):
-        """Read a region from the TIFF
-        
-        Args:
-            location: (x, y) top-left corner
-            size: (width, height) of region
-            
+        """Read a region from TIFF without forcing RGB truncation.
+
         Returns:
-            numpy array (H, W, 3), uint8, RGB
+            - HWC for multichannel TIFFs
+            - HWC for grayscale too (expanded to 1 channel if needed by caller logic)
         """
         x, y = location
         w, h = size
-        
-        # Load full image and crop (tifffile doesn't support region reading directly)
-        # For large TIFFs, this is still faster than loading full image upfront
+
         full_image = self.tif.asarray()
-        
-        # Handle channel-first format
-        if full_image.ndim == 3 and full_image.shape[0] < 10:
-            full_image = np.transpose(full_image, (1, 2, 0))
-        
-        # Crop region
-        region = full_image[y:y+h, x:x+w]
-        
-        # Convert to RGB if needed
-        if region.ndim == 2:
-            region = np.stack([region] * 3, axis=-1)
-        elif region.shape[2] > 3:
-            region = region[:, :, :3]
-        
-        # Ensure uint8
-        if region.dtype != np.uint8:
-            if region.max() <= 1.0:
-                region = (region * 255).astype(np.uint8)
+        full_image = np.asarray(full_image)
+
+        # Normalize full image to HWC for cropping
+        if full_image.ndim == 2:
+            region = full_image[y:y+h, x:x+w]
+
+        elif full_image.ndim == 3:
+            axes = None
+            try:
+                if hasattr(self.tif, "series") and self.tif.series:
+                    axes = getattr(self.tif.series[0], "axes", None)
+            except Exception:
+                axes = None
+
+            if axes == "YXC":
+                pass
+            elif axes == "CYX" or axes in ("IYX", "SYX", "QYX"):
+                full_image = np.transpose(full_image, (1, 2, 0))
             else:
-                region = region.astype(np.uint8)
-        
+                # fallback
+                if full_image.shape[0] > 4 and full_image.shape[1] > 4:
+                    pass  # HWC
+                elif full_image.shape[1] > 4 and full_image.shape[2] > 4:
+                    full_image = np.transpose(full_image, (1, 2, 0))  # CHW -> HWC
+                else:
+                    raise ValueError(f"Ambiguous TIFF shape: {full_image.shape}, axes={axes}")
+            region = full_image[y:y+h, x:x+w]
+
+        else:
+            raise ValueError(f"Unsupported TIFF ndim for read_region: {full_image.ndim}, shape={full_image.shape}")
+
+        # Keep all channels. Do NOT truncate to RGB.
+        if region.ndim == 2:
+            region = region[:, :, np.newaxis]
+
+        # Keep original dynamic range here; downstream normalizes.
         return region
-    
+
     def close(self):
         self.tif.close()
     

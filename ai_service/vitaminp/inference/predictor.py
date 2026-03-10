@@ -230,8 +230,8 @@ class WSIPredictor:
             detection_threshold=0.5,
             min_area_um=3.0,
             mpp_override=None,
-            simplify_epsilon=1.0,
-            coord_precision=1,
+            simplify_epsilon=0.0,
+            coord_precision=2,
             save_parquet=False,
         ):
             """Run inference on WSI (Optimized Wrapper)"""
@@ -286,121 +286,245 @@ class WSIPredictor:
     # =========================================================================
     # NEW: Multi-branch processing — runs all branches per tile together
     # =========================================================================
-    def _process_multi_branch(self, wsi_path, wsi_path_mif, branch_list, output_dir, clean_overlaps, iou_threshold, save_masks, save_json, save_geojson, save_csv, save_visualization, filter_tissue, tissue_threshold, detection_threshold, min_area_um, mpp_override, simplify_epsilon, coord_precision, save_parquet):
-            """OPTIMIZED: Process tiles in batches for max GPU throughput."""
-            
-            # ── shared setup ─────────────────────
-            mpp = mpp_override if mpp_override is not None else self.target_mpp
-            detected_mag = None
+    def _process_multi_branch(
+        self,
+        wsi_path,
+        wsi_path_mif,
+        branch_list,
+        output_dir,
+        clean_overlaps,
+        iou_threshold,
+        save_masks,
+        save_json,
+        save_geojson,
+        save_csv,
+        save_visualization,
+        filter_tissue,
+        tissue_threshold,
+        detection_threshold,
+        min_area_um,
+        mpp_override,
+        simplify_epsilon,
+        coord_precision,
+        save_parquet,
+    ):
+        """OPTIMIZED: Process tiles in batches for max GPU throughput.
 
-            try:
+        FIX:
+        - Single-modality MIF must NOT use generic WSI reader streaming path.
+        - It must load MIF through load_mif_image(..., self.mif_channel_config),
+        which applies nuclear/membrane channel selection and returns (2, H, W).
+        """
+
+        # ── shared setup ─────────────────────
+        mpp = mpp_override if mpp_override is not None else self.target_mpp
+        detected_mag = None
+
+        is_mif_only = (
+            not self.is_dual_model and
+            all("mif" in b.lower() for b in branch_list)
+        )
+
+        try:
+            # For MIF-only single-modality, don't rely on generic WSI reader for shape semantics
+            if not is_mif_only:
                 temp_reader = self.wsi_handler.get_wsi_reader(wsi_path)
                 if hasattr(temp_reader, 'mpp') and temp_reader.mpp is not None:
                     mpp = temp_reader.mpp if mpp_override is None else mpp
                 if hasattr(temp_reader, 'magnification') and temp_reader.magnification is not None:
                     detected_mag = temp_reader.magnification
                 temp_reader.close()
-            except Exception:
-                pass
+        except Exception:
+            pass
 
-            scale_factor = mpp / MODEL_TRAINING_MPP
-            magnification_to_use = detected_mag if detected_mag is not None else self.magnification
-            self.logger.info(f"🔍 Resolution: MPP={mpp:.4f}, scale={scale_factor:.2f}x, Batch Size={self.batch_size}")
+        scale_factor = mpp / MODEL_TRAINING_MPP
+        magnification_to_use = detected_mag if detected_mag is not None else self.magnification
+        self.logger.info(
+            f"🔍 Resolution: MPP={mpp:.4f}, scale={scale_factor:.2f}x, Batch Size={self.batch_size}"
+        )
+        self.logger.info(f"🔍 Branches: {branch_list}")
+        self.logger.info(f"🔍 is_dual_model={self.is_dual_model}, is_mif_only={is_mif_only}")
 
-            # ── open WSI & build tile grid ────────────────────────────────────
+        # ── open WSI / MIF and build tile grid ────────────────────────────────────
+        tiles = None
+        positions = None
+        tile_mask = None
+        n_h = None
+        n_w = None
+        image_mif = None
+        wsi_reader_he = None
+
+        if is_mif_only:
+            # IMPORTANT: apply channel selection here
+            self.logger.info("🧪 Using single-modality MIF path with load_mif_image()")
+            image_mif = self.wsi_handler.load_mif_image(wsi_path, self.mif_channel_config)  # (2, H, W)
+            self.logger.info(f"🧪 Loaded MIF image shape (CHW): {image_mif.shape}, dtype={image_mif.dtype}")
+
+            image_mif = np.transpose(image_mif, (1, 2, 0))  # -> (H, W, 2)
+            self.logger.info(f"🧪 Loaded MIF image shape (HWC): {image_mif.shape}, dtype={image_mif.dtype}")
+
+            tiles, positions, (n_h, n_w), tile_mask = self.tile_processor.extract_tiles(
+                image_mif,
+                filter_tissue=filter_tissue,
+                tissue_threshold=tissue_threshold,
+                tissue_dilation=self.tissue_dilation,
+                scale_factor=scale_factor,
+            )
+
+        else:
             wsi_reader_he = self.wsi_handler.get_wsi_reader(wsi_path)
-            image_mif = None
+
             if self.is_dual_model and not self.use_synthetic_mif and wsi_path_mif is not None:
                 image_mif = self.wsi_handler.load_mif_image(wsi_path_mif, self.mif_channel_config)
                 image_mif = np.transpose(image_mif, (1, 2, 0))
                 self.tile_processor.mif_image = image_mif
+                self.logger.info(f"🧪 Dual-model MIF image shape (HWC): {image_mif.shape}, dtype={image_mif.dtype}")
 
             positions, (n_h, n_w), tile_mask = self.tile_processor.extract_tiles_streaming(
-                wsi_reader_he, filter_tissue=filter_tissue, tissue_threshold=tissue_threshold,
-                tissue_dilation=self.tissue_dilation, scale_factor=scale_factor,
+                wsi_reader_he,
+                filter_tissue=filter_tissue,
+                tissue_threshold=tissue_threshold,
+                tissue_dilation=self.tissue_dilation,
+                scale_factor=scale_factor,
             )
 
-            constrained_cell_branches = set()
-            if self.use_constrained_watershed:
-                for b in branch_list:
-                    if b in _CELL_TO_NUCLEI_BRANCH and _CELL_TO_NUCLEI_BRANCH[b] in branch_list:
-                        constrained_cell_branches.add(b)
+        constrained_cell_branches = set()
+        if self.use_constrained_watershed:
+            for b in branch_list:
+                if b in _CELL_TO_NUCLEI_BRANCH and _CELL_TO_NUCLEI_BRANCH[b] in branch_list:
+                    constrained_cell_branches.add(b)
 
-            all_cells_per_branch = {b: [] for b in branch_list}
-            
-            # ── BATCH CONTAINERS ──────────────────────────────────────────────
-            batch_he_tiles = []
-            batch_mif_tiles = [] 
-            batch_metadata = [] 
+        all_cells_per_branch = {b: [] for b in branch_list}
 
-            self.logger.info(f"🧠 Running Batch Inference...")
+        # ── BATCH CONTAINERS ──────────────────────────────────────────────
+        batch_primary_tiles = []
+        batch_mif_tiles = []
+        batch_metadata = []
 
-            for idx, position in enumerate(tqdm(positions, desc="Processing")):
-                if tile_mask is not None and not tile_mask[idx]:
+        self.logger.info("🧠 Running Batch Inference...")
+
+        iterable_len = len(positions) if positions is not None else 0
+
+        for idx in tqdm(range(iterable_len), desc="Processing"):
+            if tile_mask is not None and not tile_mask[idx]:
+                continue
+
+            position = positions[idx]
+            tile_row, tile_col = idx // n_w, idx % n_w
+            grid_position = (tile_row, tile_col, n_h, n_w)
+
+            # 1. LOAD TILE (CPU IO)
+            if is_mif_only:
+                tile_primary = tiles[idx]
+                if tile_primary is None:
+                    continue
+            else:
+                tile_primary = self.tile_processor.read_tile(position)
+
+            # 2. FAST PRE-NORM (CPU)
+            if tile_primary.dtype == np.uint8:
+                tile_primary = tile_primary.astype(np.float32) / 255.0
+            elif tile_primary.dtype == np.uint16:
+                tile_primary = tile_primary.astype(np.float32) / 65535.0
+            elif tile_primary.dtype != np.float32:
+                tile_primary = tile_primary.astype(np.float32)
+
+            tile_mif = None
+            if self.is_dual_model:
+                if self.use_synthetic_mif:
+                    tile_mif = self._generate_synthetic_mif(tile_primary)
+                    tile_mif = tile_mif.astype(np.float32)
+                elif image_mif is not None:
+                    tile_mif = self.tile_processor.read_tile_mif(position)
+                    if tile_mif.dtype == np.uint8:
+                        tile_mif = tile_mif.astype(np.float32) / 255.0
+                    elif tile_mif.dtype == np.uint16:
+                        tile_mif = tile_mif.astype(np.float32) / 65535.0
+                    elif tile_mif.dtype != np.float32:
+                        tile_mif = tile_mif.astype(np.float32)
+
+            # Debug first tile only
+            if idx == 0:
+                self.logger.info(
+                    f"🧪 First tile shape={tile_primary.shape}, dtype={tile_primary.dtype}, "
+                    f"min={float(tile_primary.min()):.6f}, max={float(tile_primary.max()):.6f}"
+                )
+                if is_mif_only and tile_primary.ndim == 3 and tile_primary.shape[2] >= 2:
+                    self.logger.info(
+                        f"🧪 First MIF tile channel stats: "
+                        f"ch0 min={float(tile_primary[:, :, 0].min()):.6f} max={float(tile_primary[:, :, 0].max()):.6f}; "
+                        f"ch1 min={float(tile_primary[:, :, 1].min()):.6f} max={float(tile_primary[:, :, 1].max()):.6f}"
+                    )
+
+            # 3. ADD TO BATCH
+            batch_primary_tiles.append(tile_primary)
+            if self.is_dual_model:
+                batch_mif_tiles.append(tile_mif)
+            batch_metadata.append({'pos': position, 'grid': grid_position})
+
+            # 4. EXECUTE BATCH IF FULL OR LAST
+            if len(batch_primary_tiles) >= self.batch_size or idx == iterable_len - 1:
+                if len(batch_primary_tiles) == 0:
                     continue
 
-                tile_row, tile_col = idx // n_w, idx % n_w
-                grid_position = (tile_row, tile_col, n_h, n_w)
-
-                # 1. LOAD TILE (CPU IO)
-                tile_he = self.tile_processor.read_tile(position)
-                
-                # 2. FAST PRE-NORM (CPU)
-                # Convert to float32 [0,1] immediately to save copies later
-                if tile_he.dtype == np.uint8:
-                    tile_he = tile_he.astype(np.float32) / 255.0
-                elif tile_he.dtype != np.float32:
-                    tile_he = tile_he.astype(np.float32)
-                
-                tile_mif = None
-                if self.is_dual_model:
-                    if self.use_synthetic_mif:
-                        tile_mif = self._generate_synthetic_mif(tile_he) 
-                        tile_mif = tile_mif.astype(np.float32) 
-                    elif image_mif is not None:
-                        tile_mif = self.tile_processor.read_tile_mif(position)
-                        if tile_mif.max() > 1.0:
-                            tile_mif = tile_mif.astype(np.float32) / 255.0
-
-                # 3. ADD TO BATCH
-                batch_he_tiles.append(tile_he)
-                if self.is_dual_model:
-                    batch_mif_tiles.append(tile_mif)
-                batch_metadata.append({'pos': position, 'grid': grid_position})
-
-                # 4. EXECUTE BATCH IF FULL OR LAST
-                if len(batch_he_tiles) >= self.batch_size or idx == len(positions) - 1:
-                    if len(batch_he_tiles) == 0: continue
-
-                    self._process_batch_buffer(
-                        batch_he_tiles, batch_mif_tiles, batch_metadata,
-                        branch_list, constrained_cell_branches,
-                        all_cells_per_branch, magnification_to_use, mpp,
-                        detection_threshold, min_area_um, scale_factor
-                    )
-                    
-                    # Clear buffers
-                    batch_he_tiles = []
-                    batch_mif_tiles = []
-                    batch_metadata = []
-
-            # ── clean overlaps + export ───────────────────────────────────────
-            all_results = {}
-            for b in branch_list:
-                results = self._finalize_branch(
-                    branch=b, all_cells=all_cells_per_branch[b],
-                    wsi_path=wsi_path, wsi_path_mif=wsi_path_mif, output_dir=output_dir,
-                    clean_overlaps=clean_overlaps, iou_threshold=iou_threshold,
-                    save_masks=save_masks, save_json=save_json, save_geojson=save_geojson,
-                    save_csv=save_csv, save_visualization=save_visualization,
-                    simplify_epsilon=simplify_epsilon, coord_precision=coord_precision,
-                    save_parquet=save_parquet,
+                self._process_batch_buffer(
+                    batch_primary_tiles,
+                    batch_mif_tiles,
+                    batch_metadata,
+                    branch_list,
+                    constrained_cell_branches,
+                    all_cells_per_branch,
+                    magnification_to_use,
+                    mpp,
+                    detection_threshold,
+                    min_area_um,
+                    scale_factor,
+                    is_mif_only=is_mif_only,
                 )
-                all_results[b] = results
 
-            return all_results
+                batch_primary_tiles = []
+                batch_mif_tiles = []
+                batch_metadata = []
 
-    def _process_batch_buffer(self, batch_he, batch_mif, batch_meta, branch_list, constrained_branches, accumulator, mag, mpp, thresh, min_area, scale):
+        # ── clean overlaps + export ───────────────────────────────────────
+        all_results = {}
+        for b in branch_list:
+            results = self._finalize_branch(
+                branch=b,
+                all_cells=all_cells_per_branch[b],
+                wsi_path=wsi_path,
+                wsi_path_mif=wsi_path_mif,
+                output_dir=output_dir,
+                clean_overlaps=clean_overlaps,
+                iou_threshold=iou_threshold,
+                save_masks=save_masks,
+                save_json=save_json,
+                save_geojson=save_geojson,
+                save_csv=save_csv,
+                save_visualization=save_visualization,
+                simplify_epsilon=simplify_epsilon,
+                coord_precision=coord_precision,
+                save_parquet=save_parquet,
+            )
+            all_results[b] = results
+
+        return all_results
+
+    def _process_batch_buffer(
+        self,
+        batch_he,
+        batch_mif,
+        batch_meta,
+        branch_list,
+        constrained_branches,
+        accumulator,
+        mag,
+        mpp,
+        thresh,
+        min_area,
+        scale,
+        is_mif_only=False,
+    ):
             """Internal helper — executes one batch on GPU and unpacks results.
             
             FIX: Dual now mirrors Flex exactly:
@@ -408,26 +532,21 @@ class WSIPredictor:
               2. percentile_normalize() is applied PER-TILE, not per-batch
                  (batch-level normalisation caused cross-tile contamination → seam lines)
             """
-            from vitaminp import prepare_he_input
-
-            # ── 1. Per-tile prepare + normalize (identical to Flex _predict_tile) ──
-            #
-            # Flex path (_predict_tile, is_mif=False):
-            #   tile_tensor = prepare_he_input(tile_tensor)           # stain aug / colour norm
-            #   tile_tensor = preprocessor.percentile_normalize(tile_tensor)  # per-tile stats
-            #
-            # Previously Dual skipped prepare_he_input and called percentile_normalize
-            # on the whole batch tensor, mixing statistics across tiles → seam lines.
-            #
-            # Solution: normalise each tile independently on GPU before stacking.
-
             prepared_he_list = []
             for tile_np in batch_he:
                 t = torch.from_numpy(tile_np).permute(2, 0, 1).unsqueeze(0).float().to(self.device)
-                t = prepare_he_input(t)                          # ← FIX 1: was missing
-                t = self.preprocessor.percentile_normalize(t)   # ← FIX 2: per-tile, not per-batch
+
+                if is_mif_only:
+                    from vitaminp import prepare_mif_input
+                    t = prepare_mif_input(t)
+                else:
+                    from vitaminp import prepare_he_input
+                    t = prepare_he_input(t)
+
+                t = self.preprocessor.percentile_normalize(t)
                 prepared_he_list.append(t)
-            tensor_he = torch.cat(prepared_he_list, dim=0)      # (B, C, H, W)
+
+            tensor_he = torch.cat(prepared_he_list, dim=0)
 
             tensor_mif = None
             if self.is_dual_model and batch_mif:
@@ -575,14 +694,14 @@ class WSIPredictor:
         output_dir_path = Path(output_dir)
         output_dir_path.mkdir(exist_ok=True, parents=True)
 
-        object_type = 'nuclei' if 'nuclei' in branch else 'cell'
+        file_prefix = branch
 
         if save_json or save_geojson or save_parquet:
             ResultExporter.export_all_formats(
                 inst_info_dict=inst_info,
                 save_dir=output_dir_path,
                 image_path=wsi_path,
-                object_type=object_type,
+                object_type=file_prefix,
                 simplify_epsilon=simplify_epsilon,
                 coord_precision=coord_precision,
                 save_parquet=save_parquet,
@@ -598,8 +717,7 @@ class WSIPredictor:
                 wsi_reader_viz = self.wsi_handler.get_wsi_reader(wsi_path)
                 image = wsi_reader_viz.read_region((0, 0), (wsi_reader_viz.width, wsi_reader_viz.height))
                 wsi_reader_viz.close()
-            self._save_visualization(image, inst_info, output_dir_path, object_type)
-
+            self._save_visualization(image, inst_info, output_dir_path, file_prefix)
         results = {
             'branch':           branch,
             'num_detections':   num_instances,
@@ -630,8 +748,8 @@ class WSIPredictor:
         detection_threshold=0.5,
         min_area_um=3.0,
         mpp_override=None,
-        simplify_epsilon=1.0,
-        coord_precision=1,
+        simplify_epsilon=0.0,
+        coord_precision=2,
         save_parquet=False,
     ):
         """Process a single branch with per-tile instance extraction.

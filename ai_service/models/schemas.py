@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Union, Any
 from pydantic import BaseModel, Field
+from core.config import DEFAULT_DEVICE
 
 
 class InferenceRequest(BaseModel):
@@ -9,7 +10,7 @@ class InferenceRequest(BaseModel):
     model_name: str = Field(default="flex", description="flex | dual | syn")
     checkpoint_name: Optional[str] = Field(default=None, description="Optional checkpoint file name")
 
-    device: str = Field(default="cpu", description="cpu or cuda")
+    device: str = Field(default=DEFAULT_DEVICE, description="cpu or cuda")
 
     # Branches to run
     branches: List[str] = Field(
@@ -22,7 +23,7 @@ class InferenceRequest(BaseModel):
     overlap: int = 64
     target_mpp: float = 0.425
     magnification: int = 20
-    batch_size: int = 4
+    batch_size: int = 8
 
     # Tissue filtering
     filter_tissue: bool = True

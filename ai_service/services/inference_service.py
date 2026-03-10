@@ -9,19 +9,10 @@ adapter = VitaminPAdapter()
 
 def _candidate_geojson_paths(output_dir: str, branch_name: str):
     output_path = Path(output_dir)
-
-    object_type = "nuclei" if "nuclei" in branch_name else "cell"
-
     return [
-        # Prefer full segmentation boundaries first
         output_path / f"{branch_name}_segmentation.geojson",
-        output_path / f"{object_type}_segmentation.geojson",
-
-        # Fallback to detections if segmentation file is unavailable
         output_path / f"{branch_name}_detections.geojson",
         output_path / f"{branch_name}.geojson",
-        output_path / f"{object_type}_detections.geojson",
-        output_path / f"{object_type}.geojson",
     ]
 
 
