@@ -1,82 +1,100 @@
 # VitaminPScope
 
-**VitaminPScope** is a lightweight web-based digital pathology viewer designed for exploring large whole-slide images and multichannel microscopy data. It supports modern slide formats, fast multiscale rendering, and interactive annotation tools for research and diagnostic workflows.
+VitaminPScope is a lightweight web-based digital pathology platform for browsing, organizing, and viewing whole-slide images and multichannel microscopy data.
 
-The application is built as a modular full-stack system using **React**, **FastAPI**, **OpenSeadragon**, and **Viv**, and runs easily with **Docker Compose**.
+It combines a modern Slide Manager workspace, high-performance viewers, and synchronized multi-slide comparison tools for research and diagnostic workflows.
 
----
-
-## Features
-
-* **Whole-slide viewing**
-
-  * SVS / NDPI using **OpenSeadragon**
-  * OME-TIFF multichannel images using **Viv**
-
-* **Multichannel exploration**
-
-  * Toggle channels
-  * Change channel color and opacity
-  * Real-time compositing
-
-* **Annotation tools**
-
-  * Points
-  * Lines
-  * Rectangles
-  * Measurements
-  * Select / edit annotations
-
-* **Interactive viewer tools**
-
-  * Pan / zoom
-  * Scale bar
-  * Measurement overlay
-
-* **Architecture**
-
-  * React + Vite frontend
-  * FastAPI backend
-  * AI service placeholder for analysis pipelines
-  * Dockerized deployment
+The application is built with React, FastAPI, OpenSeadragon, and Viv, and runs easily using Docker Compose.
 
 ---
 
-## Project Structure
+# Features
 
-```
+## Slide Manager Workspace
+
+* Browse slides and folders
+* Upload new slides
+* Create folders
+* Mount external data sources
+* Search and filter slides
+* Navigate using folder breadcrumbs
+* View saved compare sessions
+* View dataset statistics
+
+The Slide Manager UI was redesigned to be cleaner, modern, and easier to use while keeping the existing architecture and functionality intact.
+
+---
+
+## Whole-Slide Viewing
+
+* SVS / NDPI using OpenSeadragon
+* OME-TIFF using Viv
+* Fast zoom and pan
+* Scale bar
+* Measurement tools
+
+---
+
+## Multichannel Microscopy
+
+* Toggle channels
+* Adjust channel color
+* Control opacity
+* Real-time compositing
+
+---
+
+## Multi-Slide Compare View
+
+* Synchronized zoom and pan
+* Cross-slide inspection
+* Save compare sessions
+
+---
+
+## Annotation Tools
+
+* Points
+* Lines
+* Rectangles
+* Measurements
+* Select / edit annotations
+
+---
+
+# Project Structure
+
 VitaminPScope
-├── frontend          React + Vite viewer UI
-├── backend           FastAPI slide API
-├── ai_service        Optional AI analysis service
-├── data              Sample slides
+├── frontend
+├── backend
+├── ai_service
+├── data
 └── docker-compose.yml
-```
 
 ---
 
-## Supported Formats
+# Supported Slide Formats
 
-* **SVS** (Aperio)
-* **NDPI** (Hamamatsu)
-* **OME-TIFF** (multichannel microscopy)
+* SVS
+* NDPI
+* TIFF / OME-TIFF
 
 ---
 
-## Running the Application
+# Running the Application
 
-### Requirements
+Requirements:
 
 * Docker
 * Docker Compose
 
-### Start the stack
+Start:
 
-```bash
+```
 docker compose up --build
 ```
 
-Open the viewer in your browser:
+Open:
 
 ```
 http://localhost:5173
@@ -84,25 +102,14 @@ http://localhost:5173
 
 ---
 
-## Annotation Workflow
-
-1. Open a slide
-2. Select an annotation tool
-3. Draw directly on the image
-4. Use **Select mode** to edit or move annotations
-5. Delete annotations using the **Delete key** or toolbar
-
----
-
-## Tech Stack
+# Tech Stack
 
 Frontend
 
 * React
 * Vite
-* DeckGL
-* Viv
 * OpenSeadragon
+* Viv
 
 Backend
 
@@ -116,15 +123,6 @@ Deployment
 
 ---
 
-## Future Extensions
-
-* AI-assisted segmentation
-* Annotation export (JSON / GeoJSON)
-* Collaborative review
-* Cloud storage support
-
----
-
-## License
+# License
 
 MIT License
