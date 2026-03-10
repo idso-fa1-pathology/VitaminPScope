@@ -4,4 +4,5 @@
 @import "./viewer/ai-panel.css";
 @import "./viewer/annotation-toolbar.css";
 @import "./viewer/channel-panel.css";
+@import "./viewer/image-adjust-panel.css";   /* add this */
 @import "./viewer/responsive.css";

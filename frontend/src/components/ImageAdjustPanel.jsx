@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import "../styles/viewer/image-adjust-panel.css";
 
 const DEFAULT_PRESETS = [
   {
@@ -84,12 +85,14 @@ function SliderRow({
   onChange,
 }) {
   return (
-    <div style={styles.sliderRow}>
-      <div style={styles.sliderHeader}>
-        <label htmlFor={name} style={styles.sliderLabel}>
+    <div className="image-adjust-panel__slider-row">
+      <div className="image-adjust-panel__slider-header">
+        <label htmlFor={name} className="image-adjust-panel__slider-label">
           {label}
         </label>
-        <span style={styles.sliderValue}>{formatSliderValue(name, value)}</span>
+        <span className="image-adjust-panel__slider-value">
+          {formatSliderValue(name, value)}
+        </span>
       </div>
 
       <input
@@ -101,7 +104,7 @@ function SliderRow({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(name, Number(e.target.value))}
-        style={styles.range}
+        className="image-adjust-panel__range"
       />
     </div>
   );
@@ -109,7 +112,7 @@ function SliderRow({
 
 function ToggleRow({ label, checked, onChange }) {
   return (
-    <label style={styles.toggleRow}>
+    <label className="image-adjust-panel__toggle-row">
       <input
         type="checkbox"
         checked={checked}
@@ -165,34 +168,38 @@ function ImageAdjustPanel({
   };
 
   return (
-    <div style={styles.root} aria-hidden={!isOpen}>
+    <div className="image-adjust-panel" aria-hidden={!isOpen}>
       <div
-        style={styles.panel}
+        className="image-adjust-panel__card"
         role="dialog"
         aria-modal="false"
         aria-label="Image adjustments"
       >
-        <div style={styles.header}>
+        <div className="image-adjust-panel__header">
           <div>
-            <div style={styles.title}>Image adjustments</div>
-            <div style={styles.subtitle}>
+            <div className="image-adjust-panel__title">Image adjustments</div>
+            <div className="image-adjust-panel__subtitle">
               Tune the viewer without blocking the slide
             </div>
           </div>
 
-          <button type="button" onClick={onClose} style={styles.closeButton}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="image-adjust-panel__close"
+          >
             ✕
           </button>
         </div>
 
-        <div style={styles.content}>
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Presets</div>
+        <div className="image-adjust-panel__content">
+          <div className="image-adjust-panel__section">
+            <div className="image-adjust-panel__section-title">Presets</div>
 
             <select
               value={selectedPresetId}
               onChange={(e) => applyPreset(e.target.value)}
-              style={styles.select}
+              className="image-adjust-panel__select"
             >
               <option value="">Custom</option>
               {presets.map((preset) => (
@@ -203,8 +210,10 @@ function ImageAdjustPanel({
             </select>
           </div>
 
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Automatic enhancement</div>
+          <div className="image-adjust-panel__section">
+            <div className="image-adjust-panel__section-title">
+              Automatic enhancement
+            </div>
 
             <ToggleRow
               label="Auto contrast"
@@ -213,8 +222,10 @@ function ImageAdjustPanel({
             />
           </div>
 
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Manual controls</div>
+          <div className="image-adjust-panel__section">
+            <div className="image-adjust-panel__section-title">
+              Manual controls
+            </div>
 
             <SliderRow
               label="Brightness"
@@ -257,8 +268,8 @@ function ImageAdjustPanel({
             />
           </div>
 
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Display modes</div>
+          <div className="image-adjust-panel__section">
+            <div className="image-adjust-panel__section-title">Display modes</div>
 
             <ToggleRow
               label="Invert colors"
@@ -274,11 +285,19 @@ function ImageAdjustPanel({
           </div>
         </div>
 
-        <div style={styles.footer}>
-          <button type="button" onClick={onReset} style={styles.secondaryButton}>
+        <div className="image-adjust-panel__footer">
+          <button
+            type="button"
+            onClick={onReset}
+            className="image-adjust-panel__button image-adjust-panel__button--secondary"
+          >
             Reset
           </button>
-          <button type="button" onClick={onClose} style={styles.primaryButton}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="image-adjust-panel__button image-adjust-panel__button--primary"
+          >
             Done
           </button>
         </div>
@@ -286,153 +305,6 @@ function ImageAdjustPanel({
     </div>
   );
 }
-
-const styles = {
-  root: {
-    position: "fixed",
-    top: 88,
-    right: 18,
-    zIndex: 1200,
-    pointerEvents: "none",
-  },
-  panel: {
-    width: "min(380px, 92vw)",
-    maxHeight: "calc(100vh - 120px)",
-    overflow: "auto",
-    background: "rgba(255,255,255,0.96)",
-    color: "#1f2937",
-    borderRadius: 18,
-    boxShadow: "0 20px 60px rgba(0,0,0,0.22)",
-    border: "1px solid rgba(148,163,184,0.28)",
-    backdropFilter: "blur(10px)",
-    pointerEvents: "auto",
-  },
-  header: {
-    padding: "16px 16px 12px",
-    borderBottom: "1px solid rgba(148,163,184,0.18)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    position: "sticky",
-    top: 0,
-    background: "rgba(255,255,255,0.92)",
-    backdropFilter: "blur(8px)",
-    zIndex: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 700,
-    lineHeight: 1.2,
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#64748b",
-  },
-  closeButton: {
-    border: "none",
-    background: "#f1f5f9",
-    color: "#334155",
-    borderRadius: 10,
-    width: 34,
-    height: 34,
-    cursor: "pointer",
-    fontSize: 16,
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  content: {
-    padding: 16,
-    display: "grid",
-    gap: 14,
-  },
-  section: {
-    border: "1px solid rgba(148,163,184,0.2)",
-    borderRadius: 14,
-    padding: 14,
-    background: "#f8fafc",
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#0f172a",
-    marginBottom: 12,
-  },
-  select: {
-    width: "100%",
-    borderRadius: 10,
-    border: "1px solid #cbd5e1",
-    padding: "10px 12px",
-    fontSize: 14,
-    background: "#fff",
-  },
-  sliderRow: {
-    display: "grid",
-    gap: 8,
-    marginBottom: 12,
-  },
-  sliderHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  sliderLabel: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: "#1e293b",
-  },
-  sliderValue: {
-    fontSize: 13,
-    color: "#475569",
-    fontVariantNumeric: "tabular-nums",
-    minWidth: 40,
-    textAlign: "right",
-  },
-  range: {
-    width: "100%",
-  },
-  toggleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-    fontSize: 14,
-    fontWeight: 500,
-    color: "#1e293b",
-    cursor: "pointer",
-  },
-  footer: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 10,
-    padding: 16,
-    borderTop: "1px solid rgba(148,163,184,0.18)",
-    position: "sticky",
-    bottom: 0,
-    background: "rgba(255,255,255,0.92)",
-    backdropFilter: "blur(8px)",
-  },
-  secondaryButton: {
-    border: "1px solid #cbd5e1",
-    background: "#fff",
-    color: "#334155",
-    borderRadius: 10,
-    padding: "10px 14px",
-    cursor: "pointer",
-    fontWeight: 600,
-  },
-  primaryButton: {
-    border: "none",
-    background: "#2563eb",
-    color: "#fff",
-    borderRadius: 10,
-    padding: "10px 14px",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-};
 
 export const DEFAULT_IMAGE_ADJUSTMENTS = {
   auto: true,

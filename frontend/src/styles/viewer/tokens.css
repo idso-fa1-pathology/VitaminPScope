@@ -38,21 +38,22 @@
   --vp-stage-bg: #050b14;
   --vp-chip-bg: rgba(255, 255, 255, 0.04);
   --vp-chip-icon-color: #9ec5ff;
-  --vp-panel-bg: rgba(255, 255, 255, 0.035);
-  --vp-panel-header-bg: rgba(255, 255, 255, 0.025);
-  --vp-soft-bg: rgba(255, 255, 255, 0.03);
-  --vp-soft-bg-2: rgba(255, 255, 255, 0.045);
-  --vp-soft-bg-3: rgba(255, 255, 255, 0.05);
-  --vp-overlay-bg: rgba(8, 15, 26, 0.58);
-  --vp-overlay-bg-compact: rgba(8, 15, 26, 0.48);
-  --vp-fab-bg: rgba(8, 15, 26, 0.62);
+
+  --vp-panel-bg: rgba(10, 17, 30, 0.96);
+  --vp-panel-header-bg: rgba(10, 17, 30, 0.94);
+  --vp-soft-bg: rgba(14, 23, 38, 0.9);
+  --vp-soft-bg-2: rgba(16, 27, 43, 0.94);
+  --vp-soft-bg-3: rgba(24, 36, 56, 0.96);
+
+  --vp-overlay-bg: rgba(8, 15, 26, 0.82);
+  --vp-overlay-bg-compact: rgba(8, 15, 26, 0.76);
+  --vp-fab-bg: rgba(8, 15, 26, 0.88);
   --vp-switch-bg: rgba(255, 255, 255, 0.05);
   --vp-switch-knob: #dbe7f4;
   --vp-switch-knob-active: #ffffff;
   --vp-not-found-bg: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
   --vp-strong-text: #ffffff;
 }
-
 .viewer-page--light {
   --vp-bg: #f4f7fb;
   --vp-bg-2: #eaf0f7;

@@ -1,13 +1,10 @@
 import React, { useMemo, useState } from "react";
+import "../styles/viewer/channel-panel.css";
 
 function getChannelDisplayName(channel, position) {
   if (channel?.name && String(channel.name).trim()) return channel.name;
   if (channel?.label && String(channel.label).trim()) return channel.label;
   return `Channel ${channel?.index ?? position + 1}`;
-}
-
-function formatOpacity(opacity) {
-  return `${Math.round((opacity ?? 1) * 100)}%`;
 }
 
 function ChannelPanel({
@@ -51,45 +48,41 @@ function ChannelPanel({
 
   return (
     <div className="channel-panel">
-      <div className="channel-panel__topbar">
-        <div className="channel-panel__summary">
-          <span className="channel-panel__summary-main">
-            {selectedSet.size} selected
-          </span>
-          <span className="channel-panel__summary-sep">•</span>
-          <span className="channel-panel__summary-sub">
-            {channels.length} total channels
-          </span>
+      <div className="channel-panel__toolbar">
+        <div className="channel-panel__meta">
+          <span className="channel-panel__count">{selectedSet.size} selected</span>
+          <span className="channel-panel__dot">•</span>
+          <span className="channel-panel__total">{channels.length} total</span>
         </div>
 
-        <div className="channel-panel__actions">
+        <div className="channel-panel__toolbar-actions">
           {onEnableAll ? (
             <button
               type="button"
-              className="channel-panel__action-btn"
+              className="channel-panel__toolbar-btn"
               onClick={onEnableAll}
             >
-              Enable all
+              All
             </button>
           ) : null}
 
           {onDisableAll ? (
             <button
               type="button"
-              className="channel-panel__action-btn"
+              className="channel-panel__toolbar-btn"
               onClick={onDisableAll}
             >
-              Disable all
+              None
             </button>
           ) : null}
 
           {onResetAll ? (
             <button
               type="button"
-              className="channel-panel__action-btn"
+              className="channel-panel__toolbar-btn"
               onClick={onResetAll}
             >
-              Reset styles
+              Reset tint
             </button>
           ) : null}
         </div>
@@ -100,11 +93,11 @@ function ChannelPanel({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search channels by name or index"
+          placeholder="Search channels"
           className="channel-panel__search"
         />
 
-        <label className="channel-panel__toggle">
+        <label className="channel-panel__selected-toggle">
           <input
             type="checkbox"
             checked={showSelectedOnly}
@@ -123,94 +116,64 @@ function ChannelPanel({
               opacity: 1,
             };
 
+            const displayName = getChannelDisplayName(channel, position);
+
             return (
               <div
                 key={channel.index ?? position}
-                className={`channel-card ${selected ? "channel-card--active" : ""}`}
+                className={`channel-row ${selected ? "channel-row--active" : ""}`}
               >
-                <label className="channel-card__header">
-                  <div className="channel-card__left">
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => onToggle(channel.index)}
-                      className="channel-card__checkbox"
-                    />
-
-                    <div className="channel-card__title-group">
-                      <span className="channel-card__title">
-                        {getChannelDisplayName(channel, position)}
-                      </span>
-
-                      <span className="channel-card__subtitle">
-                        Index {channel.index}
-                        {channel.id !== undefined && channel.id !== null
-                          ? ` • ID ${channel.id}`
-                          : ""}
-                      </span>
-                    </div>
-                  </div>
+                <label className="channel-row__main">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => onToggle(channel.index)}
+                    className="channel-row__checkbox"
+                  />
 
                   <div
-                    className="channel-card__swatch"
-                    style={{ backgroundColor: settings.color || "#6b7280" }}
+                    className="channel-row__swatch"
+                    style={{ backgroundColor: settings.color || "#64748b" }}
                     title={settings.color || "No tint"}
                   />
-                </label>
 
-                {selected ? (
-                  <div className="channel-card__controls">
-                    <div className="channel-control-row">
-                      <label className="channel-control-label">Tint color</label>
-
-                      <div className="channel-color-wrap">
-                        <input
-                          type="color"
-                          value={settings.color || "#ffffff"}
-                          onChange={(e) =>
-                            onUpdate(channel.index, { color: e.target.value })
-                          }
-                          className="channel-color-input"
-                        />
-
-                        <button
-                          type="button"
-                          className="channel-panel__action-btn"
-                          onClick={() => onUpdate(channel.index, { color: null })}
-                        >
-                          Clear tint
-                        </button>
-
-                        <span className="channel-color-value">
-                          {settings.color ? settings.color.toUpperCase() : "No tint"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="channel-control-row">
-                      <div className="channel-opacity-header">
-                        <label className="channel-control-label">Opacity</label>
-                        <span className="channel-opacity-value">
-                          {formatOpacity(settings.opacity)}
-                        </span>
-                      </div>
-
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={settings.opacity ?? 1}
-                        onChange={(e) =>
-                          onUpdate(channel.index, {
-                            opacity: Number(e.target.value),
-                          })
-                        }
-                        className="channel-slider"
-                      />
+                  <div className="channel-row__text">
+                    <div className="channel-row__name">{displayName}</div>
+                    <div className="channel-row__meta">
+                      Ch {channel.index}
+                      {channel.id !== undefined && channel.id !== null
+                        ? ` • ID ${channel.id}`
+                        : ""}
                     </div>
                   </div>
-                ) : null}
+                </label>
+
+                <div className="channel-row__actions">
+                  {selected ? (
+                    <>
+                      <input
+                        type="color"
+                        value={settings.color || "#ffffff"}
+                        onChange={(e) =>
+                          onUpdate(channel.index, { color: e.target.value })
+                        }
+                        className="channel-row__color"
+                        title="Tint color"
+                      />
+
+                      <button
+                        type="button"
+                        className="channel-row__clear"
+                        onClick={() => onUpdate(channel.index, { color: null })}
+                        title="Clear tint"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  ) : (
+                    <span className="channel-row__status">Off</span>
+                  )}
+                </div>
               </div>
             );
           })

@@ -1,0 +1,203 @@
+.image-adjust-panel {
+  position: fixed;
+  top: 88px;
+  right: 18px;
+  z-index: 1200;
+  pointer-events: none;
+}
+
+.image-adjust-panel__card {
+  width: min(380px, 92vw);
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+  border: 1px solid var(--vp-border);
+  border-radius: 18px;
+  background: var(--vp-panel-bg);
+  color: var(--vp-text);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+}
+
+.image-adjust-panel__header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--vp-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--vp-panel-header-bg);
+  backdrop-filter: blur(10px);
+}
+
+.image-adjust-panel__title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--vp-strong-text);
+}
+
+.image-adjust-panel__subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--vp-text-muted);
+}
+
+.image-adjust-panel__close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  background: var(--vp-soft-bg-2);
+  color: var(--vp-text);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.18s ease;
+}
+
+.image-adjust-panel__close:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.image-adjust-panel__content {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.image-adjust-panel__section {
+  border: 1px solid var(--vp-border);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--vp-soft-bg);
+}
+
+.image-adjust-panel__section-title {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--vp-strong-text);
+}
+
+.image-adjust-panel__select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  background: var(--vp-soft-bg-2);
+  color: var(--vp-text);
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+}
+
+.image-adjust-panel__select:focus {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.image-adjust-panel__slider-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.image-adjust-panel__slider-row:last-child {
+  margin-bottom: 0;
+}
+
+.image-adjust-panel__slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.image-adjust-panel__slider-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--vp-text);
+}
+
+.image-adjust-panel__slider-value {
+  min-width: 44px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--vp-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.image-adjust-panel__range {
+  width: 100%;
+  accent-color: var(--vp-primary);
+}
+
+.image-adjust-panel__toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-text);
+  cursor: pointer;
+}
+
+.image-adjust-panel__toggle-row:last-child {
+  margin-bottom: 0;
+}
+
+.image-adjust-panel__toggle-row input {
+  margin: 0;
+}
+
+.image-adjust-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid var(--vp-border);
+  position: sticky;
+  bottom: 0;
+  background: var(--vp-panel-header-bg);
+  backdrop-filter: blur(10px);
+}
+
+.image-adjust-panel__button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.image-adjust-panel__button--secondary {
+  border: 1px solid var(--vp-border);
+  background: var(--vp-soft-bg-2);
+  color: var(--vp-text);
+}
+
+.image-adjust-panel__button--secondary:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.image-adjust-panel__button--primary {
+  border: none;
+  background: var(--vp-primary);
+  color: #fff;
+}
+
+.image-adjust-panel__button--primary:hover {
+  filter: brightness(1.05);
+}

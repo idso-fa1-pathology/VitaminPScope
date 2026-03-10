@@ -7,7 +7,6 @@ import {
   TOOL_SELECT,
 } from "../annotations/annotationTypes";
 import AnnotationToolbar from "../annotations/AnnotationToolbar";
-import ChannelPanel from "../components/ChannelPanel";
 import OpenSeadragonViewer from "../viewers/OpenSeadragonViewer";
 import VivViewer from "../viewers/VivViewer";
 import "../styles/viewer-page.css";
@@ -25,6 +24,7 @@ import {
   ViewerDisplaySection,
 } from "./viewer/viewerSections";
 import { useViewerLogic } from "./viewer/useViewerLogic";
+import ChannelOverlayPanel from "../components/ChannelOverlayPanel";
 
 function ViewerPage() {
   const navigate = useNavigate();
@@ -64,6 +64,8 @@ function ViewerPage() {
     setShowScaleBar,
     showImageAdjustPanel,
     setShowImageAdjustPanel,
+    showChannelPanel,
+    setShowChannelPanel,
     theme,
     imageAdjustments,
     normalizedChannels,
@@ -213,12 +215,12 @@ function ViewerPage() {
             detectedChannelCount={normalizedChannels.length}
           />
 
-          <ViewerStatusSection
+          {/* <ViewerStatusSection
             slideInfo={slideInfo}
             isMultichannel={isMultichannel}
             selectedChannelsCount={selectedChannels.length}
             detectedChannelCount={normalizedChannels.length}
-          />
+          /> */}
 
           <ViewerMetadataSection slideInfo={slideInfo} />
 
@@ -229,29 +231,7 @@ function ViewerPage() {
             />
           ) : null}
 
-          {useVivViewer && normalizedChannels.length ? (
-            <div className="viewer-sidebar__section">
-              <div className="viewer-sidebar__section-header">
-                <h3 className="viewer-sidebar__section-title">Channel controls</h3>
-                <p className="viewer-sidebar__section-subtitle">
-                  Enable, filter, tint, and adjust multichannel rendering
-                </p>
-              </div>
 
-              <div className="viewer-sidebar__section-body">
-                <ChannelPanel
-                  channels={normalizedChannels}
-                  selectedChannels={selectedChannels}
-                  channelSettings={channelSettings}
-                  onToggle={toggleChannel}
-                  onUpdate={updateChannelSettings}
-                  onEnableAll={handleEnableAllChannels}
-                  onDisableAll={handleDisableAllChannels}
-                  onResetAll={handleResetAllChannels}
-                />
-              </div>
-            </div>
-          ) : null}
 
           <ViewerToolsSection
             onResetView={handleResetView}
@@ -406,6 +386,7 @@ function ViewerPage() {
                         >
                           ＋
                         </button>
+
                         <button
                           className="viewer-fab-btn"
                           onClick={handleZoomOut}
@@ -414,6 +395,7 @@ function ViewerPage() {
                         >
                           －
                         </button>
+
                         <button
                           className="viewer-fab-btn"
                           onClick={handleResetView}
@@ -422,9 +404,33 @@ function ViewerPage() {
                         >
                           ⌂
                         </button>
+
+                        {useVivViewer && normalizedChannels.length ? (
+                          <button
+                            className={`viewer-fab-btn ${showChannelPanel ? "viewer-fab-btn--active" : ""}`}
+                            onClick={() => {
+                              setShowChannelPanel((prev) => {
+                                const next = !prev;
+                                if (next) setShowImageAdjustPanel(false);
+                                return next;
+                              });
+                            }}
+                            type="button"
+                            title="Channel controls"
+                          >
+                            🌈
+                          </button>
+                        ) : null}
+
                         <button
-                          className="viewer-fab-btn"
-                          onClick={() => setShowImageAdjustPanel(true)}
+                          className={`viewer-fab-btn ${showImageAdjustPanel ? "viewer-fab-btn--active" : ""}`}
+                          onClick={() => {
+                            setShowImageAdjustPanel((prev) => {
+                              const next = !prev;
+                              if (next) setShowChannelPanel(false);
+                              return next;
+                            });
+                          }}
                           type="button"
                           title="Image adjustments"
                         >
@@ -512,6 +518,19 @@ function ViewerPage() {
           </div>
         </main>
       </div>
+
+      <ChannelOverlayPanel
+        isOpen={showChannelPanel}
+        channels={normalizedChannels}
+        selectedChannels={selectedChannels}
+        channelSettings={channelSettings}
+        onToggle={toggleChannel}
+        onUpdate={updateChannelSettings}
+        onEnableAll={handleEnableAllChannels}
+        onDisableAll={handleDisableAllChannels}
+        onResetAll={handleResetAllChannels}
+        onClose={() => setShowChannelPanel(false)}
+      />
 
       <ImageAdjustPanel
         isOpen={showImageAdjustPanel}

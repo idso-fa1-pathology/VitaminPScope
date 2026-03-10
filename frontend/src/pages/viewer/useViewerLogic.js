@@ -48,8 +48,11 @@ export function useViewerLogic({
   const [showScaleBar, setShowScaleBar] = useState(true);
 
   const [showImageAdjustPanel, setShowImageAdjustPanel] = useState(false);
+  const [showChannelPanel, setShowChannelPanel] = useState(false);
+
   const [theme, setTheme] = useState("dark");
   const [imageAdjustmentsBySlide, setImageAdjustmentsBySlide] = useState({});
+
 
   useEffect(() => {
     if (activeTool !== TOOL_SELECT) {
@@ -154,6 +157,7 @@ export function useViewerLogic({
   useEffect(() => {
     setSelectedAnnotationId(null);
     setShowImageAdjustPanel(false);
+    setShowChannelPanel(false);
   }, [slideAnnotationKey]);
 
   useEffect(() => {
@@ -361,7 +365,11 @@ export function useViewerLogic({
     setShowScaleBar,
     showImageAdjustPanel,
     setShowImageAdjustPanel,
+    showChannelPanel,
+    setShowChannelPanel,
     theme,
+    imageAdjustments,
+    toggleChannel,
     imageAdjustments,
     toggleChannel,
     updateChannelSettings,
