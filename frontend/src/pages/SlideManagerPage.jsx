@@ -11,6 +11,12 @@ import {
   deleteSource as deleteMountedSource,
   fetchSources,
 } from "../api/sources";
+import {
+  deleteCompareSession,
+  fetchCompareSessions,
+  renameCompareSession,
+} from "../api/compareSessions";
+import CompareSessionCard from "../components/CompareSessionCard";
 import FileManagerCard from "../components/FileManagerCard";
 import Modal from "../components/Modal";
 import UploadPanel from "../components/UploadPanel";
@@ -48,10 +54,6 @@ function getTypeLabel(type) {
   return labels[normalized] || normalized.toUpperCase();
 }
 
-function formatPathLabel(path) {
-  return path ? `Path: ${path}` : "Path: Root";
-}
-
 function getTopFormatCounts(slides) {
   const countsMap = slides.reduce((acc, slide) => {
     const type = normalizeType(slide.type);
@@ -87,12 +89,34 @@ function buildTypeFilterOptions(slides) {
   ];
 }
 
+function formatBytes(size) {
+  if (size === null || size === undefined || Number.isNaN(Number(size))) {
+    return "—";
+  }
+
+  const value = Number(size);
+  if (value < 1024) return `${value} B`;
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let unitIndex = -1;
+  let nextValue = value;
+
+  do {
+    nextValue /= 1024;
+    unitIndex += 1;
+  } while (nextValue >= 1024 && unitIndex < units.length - 1);
+
+  return `${nextValue.toFixed(nextValue >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
 function SlideManagerPage() {
   const [slides, setSlides] = useState([]);
   const [folders, setFolders] = useState([]);
+  const [compareSessions, setCompareSessions] = useState([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
   const [currentSourceId, setCurrentSourceId] = useState("default");
 
@@ -116,6 +140,11 @@ function SlideManagerPage() {
   const [sourceReadOnly, setSourceReadOnly] = useState(true);
   const [selectedSource, setSelectedSource] = useState(null);
 
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [renameSessionOpen, setRenameSessionOpen] = useState(false);
+  const [deleteSessionOpen, setDeleteSessionOpen] = useState(false);
+  const [renameSessionValue, setRenameSessionValue] = useState("");
+
   const navigate = useNavigate();
   const [selectedSlides, setSelectedSlides] = useState([]);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -127,7 +156,10 @@ function SlideManagerPage() {
       const nextSources = data.sources || [];
       setSources(nextSources);
 
-      if (!nextSources.some((source) => source.id === currentSourceId) && nextSources.length) {
+      if (
+        !nextSources.some((source) => source.id === currentSourceId) &&
+        nextSources.length
+      ) {
         const defaultSource =
           nextSources.find((source) => source.is_default) || nextSources[0];
         setCurrentSourceId(defaultSource.id);
@@ -157,8 +189,22 @@ function SlideManagerPage() {
     }
   };
 
+  const loadCompareSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const data = await fetchCompareSessions();
+      setCompareSessions(data.sessions || []);
+    } catch (err) {
+      console.error("Error fetching compare sessions:", err);
+      setError(err.message || "Failed to load compare sessions.");
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadSources();
+    loadCompareSessions();
   }, []);
 
   useEffect(() => {
@@ -173,31 +219,33 @@ function SlideManagerPage() {
   const handleOpenItem = (item) => {
     if (selectionMode && item.kind === "slide") {
       const itemKey = `${item.source_id || currentSourceId}::${item.path || item.name}`;
-  
+
       setSelectedSlides((prev) => {
         const exists = prev.some(
           (slide) =>
-            `${slide.source_id || currentSourceId}::${slide.path || slide.name}` === itemKey
+            `${slide.source_id || currentSourceId}::${slide.path || slide.name}` ===
+            itemKey
         );
-  
+
         if (exists) {
           return prev.filter(
             (slide) =>
-              `${slide.source_id || currentSourceId}::${slide.path || slide.name}` !== itemKey
+              `${slide.source_id || currentSourceId}::${slide.path || slide.name}` !==
+              itemKey
           );
         }
-  
+
         return [...prev, item];
       });
-  
+
       return;
     }
-  
+
     if (item.kind === "folder") {
       setCurrentPath(item.path || item.name);
       return;
     }
-  
+
     navigate(
       `/viewer/${encodeURIComponent(item.path || item.name)}?source_id=${encodeURIComponent(
         item.source_id || currentSourceId
@@ -212,22 +260,43 @@ function SlideManagerPage() {
     setCurrentPath(parts.join("/"));
   };
 
+  const handleBreadcrumbClick = (index) => {
+    if (index < 0) {
+      setCurrentPath("");
+      return;
+    }
+
+    const parts = currentPath.split("/").filter(Boolean);
+    setCurrentPath(parts.slice(0, index + 1).join("/"));
+  };
+
   const handleClearSelection = () => {
     setSelectedSlides([]);
     setSelectionMode(false);
   };
-  
+
   const handleOpenCompare = () => {
     if (selectedSlides.length < 2) return;
-  
+
     const encodedSlides = selectedSlides
       .map((slide) => slide.path || slide.name)
       .join("||");
-  
+
     navigate(
       `/compare?source_id=${encodeURIComponent(currentSourceId)}&slides=${encodeURIComponent(
         encodedSlides
       )}`
+    );
+  };
+
+  const handleOpenCompareSession = (session) => {
+    const slides = Array.isArray(session?.slides) ? session.slides : [];
+    if (slides.length < 2) return;
+
+    navigate(
+      `/compare?source_id=${encodeURIComponent(
+        session.source_id || "default"
+      )}&slides=${encodeURIComponent(slides.join("||"))}`
     );
   };
 
@@ -341,6 +410,46 @@ function SlideManagerPage() {
     }
   };
 
+  const openRenameSessionModal = (session) => {
+    setSelectedSession(session);
+    setRenameSessionValue(session?.name || "");
+    setRenameSessionOpen(true);
+  };
+
+  const openDeleteSessionModal = (session) => {
+    setSelectedSession(session);
+    setDeleteSessionOpen(true);
+  };
+
+  const handleRenameSession = async () => {
+    if (!selectedSession || !renameSessionValue.trim()) return;
+
+    try {
+      await renameCompareSession(selectedSession.id, renameSessionValue.trim());
+      setRenameSessionOpen(false);
+      setSelectedSession(null);
+      setRenameSessionValue("");
+      await loadCompareSessions();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to rename compare session.");
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!selectedSession) return;
+
+    try {
+      await deleteCompareSession(selectedSession.id);
+      setDeleteSessionOpen(false);
+      setSelectedSession(null);
+      await loadCompareSessions();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to delete compare session.");
+    }
+  };
+
   const handleUploadComplete = async (response) => {
     await loadSlides(currentPath, currentSourceId);
 
@@ -380,6 +489,10 @@ function SlideManagerPage() {
     const totalItems = totalSlides + totalFolders;
     const uniqueFormats = new Set(slides.map((s) => normalizeType(s.type))).size;
     const topFormats = getTopFormatCounts(slides);
+    const totalSize = slides.reduce((sum, slide) => {
+      const n = Number(slide?.size || 0);
+      return Number.isFinite(n) ? sum + n : sum;
+    }, 0);
 
     return {
       totalSlides,
@@ -387,6 +500,7 @@ function SlideManagerPage() {
       totalItems,
       uniqueFormats,
       topFormats,
+      totalSize,
     };
   }, [slides, folders]);
 
@@ -430,112 +544,152 @@ function SlideManagerPage() {
     });
   }, [items, search, typeFilter]);
 
+  const breadcrumbParts = useMemo(() => {
+    return currentPath.split("/").filter(Boolean);
+  }, [currentPath]);
+
+  const selectedCountLabel = `${selectedSlides.length} selected`;
+
   return (
     <div className="slide-manager-page">
       <div className="slide-manager-shell">
-        <section className="hero-panel">
+        <section className="hero-panel hero-panel--compact">
           <div className="hero-panel__content">
             <div className="manager-eyebrow">Digital Pathology Workspace</div>
-            <h1 className="app-title">VitaminPScope</h1>
-            <p className="hero-panel__subtitle">
-              Manage pathology slides, organize folders, and open whole-slide
-              images in a cleaner, faster workspace.
-            </p>
+            <div className="workspace-header">
+              <div>
+                <h1 className="app-title app-title--compact">Slide Manager</h1>
+                <p className="hero-panel__subtitle">
+                  Browse pathology slides, manage folders, mount data sources, and reopen
+                  synchronized compare sessions from one streamlined workspace.
+                </p>
+              </div>
 
-            <div className="hero-panel__meta">
-              <span className="hero-badge">Workspace</span>
-              <span className="hero-badge">
-                Source: {currentSource?.name || currentSourceId}
-              </span>
-              {currentSource ? (
+              <div className="workspace-status">
                 <span className="hero-badge">
-                  {currentSource.read_only ? "Read-only" : "Writable"}
+                  Source: {currentSource?.name || currentSourceId}
                 </span>
-              ) : null}
-              <span className="hero-badge">
-                {counts.uniqueFormats} format{counts.uniqueFormats === 1 ? "" : "s"}
-              </span>
+                {currentSource ? (
+                  <span className="hero-badge">
+                    {currentSource.read_only ? "Read-only" : "Writable"}
+                  </span>
+                ) : null}
+                <span className="hero-badge">
+                  {counts.totalSlides} slide{counts.totalSlides === 1 ? "" : "s"}
+                </span>
+                <span className="hero-badge">
+                  {compareSessions.length} compare session
+                  {compareSessions.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="workspace-topbar toolbar-card">
+          <div className="workspace-topbar__main">
+            <div className="workspace-field workspace-field--source">
+              <div className="toolbar-field__label">Workspace Source</div>
+              <select
+                value={currentSourceId}
+                onChange={handleSourceChange}
+                disabled={sourcesLoading || !sources.length}
+                className="workspace-select"
+              >
+                {sources.map((source) => (
+                  <option key={source.id} value={source.id}>
+                    {source.name}
+                    {source.read_only ? " • read-only" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="workspace-field workspace-field--search">
+              <div className="toolbar-field__label">Search Library</div>
+              <div className="search-box">
+                <span className="search-box__icon">⌕</span>
+                <input
+                  type="text"
+                  placeholder="Search slides, folders, paths, or formats..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="hero-panel__actions">
-            {currentPath ? (
-              <button className="secondary-btn" onClick={handleGoBack}>
-                ← Back
+          <div className="quick-actions-bar">
+            <div className="quick-actions-bar__title">Quick Actions</div>
+
+            <div className="quick-actions-bar__items">
+              <button
+                className="primary-btn"
+                onClick={() => setUploadOpen(true)}
+                disabled={currentSource?.read_only}
+                type="button"
+              >
+                Upload Slides
               </button>
-            ) : null}
 
-            <button
-              className="primary-btn"
-              onClick={() => setCreateFolderOpen(true)}
-              disabled={currentSource?.read_only}
-            >
-              + New Folder
-            </button>
-
-            <button
-              className="secondary-btn"
-              onClick={() => setUploadOpen(true)}
-              disabled={currentSource?.read_only}
-            >
-              Upload
-            </button>
-
-            <button
-              className="secondary-btn"
-              onClick={() => setCreateSourceOpen(true)}
-            >
-              + Mount Folder
-            </button>
-
-            {currentSourceId !== "default" ? (
               <button
                 className="secondary-btn"
-                onClick={() => openDeleteSourceModal(currentSource)}
-                disabled={!currentSource}
+                onClick={() => setCreateFolderOpen(true)}
+                disabled={currentSource?.read_only}
+                type="button"
               >
-                Unmount
+                New Folder
               </button>
-            ) : null}
 
-            <button
-              className="secondary-btn"
-              onClick={() => loadSlides(currentPath, currentSourceId)}
-              type="button"
-            >
-              Refresh
-            </button>
-            <button
-              className="secondary-btn"
-              onClick={() => {
-                if (selectionMode) {
-                  handleClearSelection();
-                } else {
-                  setSelectionMode(true);
-                }
-              }}
-              type="button"
-            >
-              {selectionMode ? "Cancel Select" : "Select Slides"}
-            </button>
+              <button
+                className="secondary-btn"
+                onClick={() => setCreateSourceOpen(true)}
+                type="button"
+              >
+                Mount Source
+              </button>
 
-            <button
-              className="primary-btn"
-              onClick={handleOpenCompare}
-              disabled={selectedSlides.length < 2}
-              type="button"
-            >
-              Compare / Sync View ({selectedSlides.length})
-            </button>    
-               
-              
+              {currentSourceId !== "default" ? (
+                <button
+                  className="secondary-btn"
+                  onClick={() => openDeleteSourceModal(currentSource)}
+                  disabled={!currentSource}
+                  type="button"
+                >
+                  Unmount
+                </button>
+              ) : null}
+
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  if (selectionMode) {
+                    handleClearSelection();
+                  } else {
+                    setSelectionMode(true);
+                  }
+                }}
+                type="button"
+              >
+                {selectionMode ? "Cancel Selection" : "Select for Compare"}
+              </button>
+
+              <button
+                className="primary-btn"
+                onClick={handleOpenCompare}
+                disabled={selectedSlides.length < 2}
+                type="button"
+              >
+                Open Compare ({selectedSlides.length})
+              </button>
+            </div>
           </div>
         </section>
 
         <section className="slide-manager-stats">
           <div className="stat-tile">
-            <div className="stat-tile__label">Total items</div>
-            <div className="stat-tile__value">{counts.totalItems}</div>
+            <div className="stat-tile__label">Visible Items</div>
+            <div className="stat-tile__value">{filteredItems.length}</div>
           </div>
 
           <div className="stat-tile">
@@ -551,89 +705,159 @@ function SlideManagerPage() {
           </div>
 
           <div className="stat-tile">
-            <div className="stat-tile__label">
-              {counts.topFormats[1]?.label || "Formats"}
-            </div>
-            <div className="stat-tile__value">
-              {counts.topFormats[1]?.count || counts.uniqueFormats}
+            <div className="stat-tile__label">Library Size</div>
+            <div className="stat-tile__value stat-tile__value--small">
+              {formatBytes(counts.totalSize)}
             </div>
           </div>
         </section>
 
-        <section className="toolbar-card">
-          <div className="manager-header-row">
-            <div style={{ minWidth: 260 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#64748b",
-                  marginBottom: 6,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Mounted library
+        <section className="toolbar-card library-toolbar-card">
+          <div className="library-toolbar-card__top">
+            <div>
+              <div className="toolbar-field__label">Current Location</div>
+              <div className="path-shell" title={currentPath || "Root"}>
+                <div className="breadcrumb-trail">
+                  <button
+                    type="button"
+                    className={`breadcrumb-chip ${!currentPath ? "active" : ""}`}
+                    onClick={() => handleBreadcrumbClick(-1)}
+                  >
+                    Root
+                  </button>
+
+                  {breadcrumbParts.map((part, index) => {
+                    const isActive = index === breadcrumbParts.length - 1;
+
+                    return (
+                      <div key={`${part}-${index}`} className="breadcrumb-segment">
+                        <span className="breadcrumb-divider">/</span>
+                        <button
+                          type="button"
+                          className={`breadcrumb-chip ${isActive ? "active" : ""}`}
+                          onClick={() => handleBreadcrumbClick(index)}
+                        >
+                          {part}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-
-              <select
-                value={currentSourceId}
-                onChange={handleSourceChange}
-                disabled={sourcesLoading || !sources.length}
-                style={{
-                  width: "100%",
-                  height: 52,
-                  borderRadius: 16,
-                  border: "1px solid rgba(203, 213, 225, 0.9)",
-                  padding: "0 14px",
-                  fontSize: 14,
-                  color: "#0f172a",
-                  background: "rgba(255,255,255,0.92)",
-                  outline: "none",
-                }}
-              >
-                {sources.map((source) => (
-                  <option key={source.id} value={source.id}>
-                    {source.name}
-                    {source.read_only ? " • read-only" : ""}
-                  </option>
-                ))}
-              </select>
             </div>
 
-            <div className="search-box">
-            <div className="toolbar-field__label">Search Bar</div>
-
-              <span className="search-box__icon">⌕</span>
-              <input
-                type="text"
-                placeholder="Search slides, folders, paths, or formats..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="toolbar-inline-actions">
-              {typeFilterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  className={`filter-pill ${typeFilter === option.value ? "active" : ""}`}
-                  onClick={() => setTypeFilter(option.value)}
-                  type="button"
-                >
-                  {option.label}
+            <div className="library-toolbar-card__actions">
+              {currentPath ? (
+                <button className="secondary-btn" onClick={handleGoBack} type="button">
+                  ← Parent
                 </button>
-              ))}
+              ) : null}
+
+              <button
+                className="secondary-btn"
+                onClick={() => loadSlides(currentPath, currentSourceId)}
+                type="button"
+              >
+                Refresh
+              </button>
             </div>
+          </div>
+
+          <div className="library-toolbar-card__bottom">
+            <div className="filter-row">
+              <div className="toolbar-field__label">Smart Filters</div>
+              <div className="toolbar-inline-actions">
+                {typeFilterOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={`filter-pill ${typeFilter === option.value ? "active" : ""}`}
+                    onClick={() => setTypeFilter(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(selectionMode || search || typeFilter !== "all") && (
+              <div className="library-status-row">
+                {selectionMode ? (
+                  <div className="content-summary-chip">{selectedCountLabel}</div>
+                ) : null}
+
+                {search ? (
+                  <div className="content-summary-chip">Search: {search}</div>
+                ) : null}
+
+                {typeFilter !== "all" ? (
+                  <div className="content-summary-chip">
+                    Filter: {getTypeLabel(typeFilter)}
+                  </div>
+                ) : null}
+
+                {(selectionMode || search || typeFilter !== "all") && (
+                  <button
+                    className="secondary-btn secondary-btn--small"
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setTypeFilter("all");
+                      handleClearSelection();
+                    }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
         <section className="content-card">
           <div className="content-card__top">
             <div>
-              <h2 className="content-card__title">Library</h2>
+              <h2 className="content-card__title">Saved Compare Sessions</h2>
               <p className="content-card__subtitle">
-                Browse your folders and pathology slide files
+                Reopen synchronized multi-slide workspaces and continue where you left off
+              </p>
+            </div>
+
+            <div className="content-summary-chip">
+              {sessionsLoading ? "Loading..." : `${compareSessions.length} saved`}
+            </div>
+          </div>
+
+          {compareSessions.length === 0 && !sessionsLoading ? (
+            <div className="empty-state">
+              <div className="empty-state__icon">🔗</div>
+              <h3 className="empty-state__title">No saved compare sessions yet</h3>
+              <p className="empty-state__text">
+                Select 2 or more slides, open compare view, and save the session to make
+                it available here.
+              </p>
+            </div>
+          ) : (
+            <div className="compare-session-grid">
+              {compareSessions.map((session) => (
+                <CompareSessionCard
+                  key={session.id}
+                  session={session}
+                  onOpen={handleOpenCompareSession}
+                  onRename={openRenameSessionModal}
+                  onDelete={openDeleteSessionModal}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="content-card">
+          <div className="content-card__top">
+            <div>
+              <h2 className="content-card__title">Library Browser</h2>
+              <p className="content-card__subtitle">
+                Browse folders and pathology slide files in the active workspace
               </p>
             </div>
 
@@ -647,7 +871,7 @@ function SlideManagerPage() {
               <h3 className="empty-state__title">Something went wrong</h3>
               <p className="empty-state__text">{error}</p>
               <div style={{ marginTop: 16 }}>
-                <button className="secondary-btn" onClick={() => setError("")}>
+                <button className="secondary-btn" onClick={() => setError("")} type="button">
                   Dismiss
                 </button>
               </div>
@@ -659,7 +883,7 @@ function SlideManagerPage() {
               <div className="empty-state__icon">🗂️</div>
               <h3 className="empty-state__title">No items found</h3>
               <p className="empty-state__text">
-                Try a different search, change the filter, upload files, or create a new
+                Try a different search, change the filter, upload slides, or create a new
                 folder to get started.
               </p>
             </div>
@@ -676,7 +900,8 @@ function SlideManagerPage() {
                   isSelected={selectedSlides.some(
                     (slide) =>
                       (slide.path || slide.name) === (item.path || item.name) &&
-                      (slide.source_id || currentSourceId) === (item.source_id || currentSourceId)
+                      (slide.source_id || currentSourceId) ===
+                        (item.source_id || currentSourceId)
                   )}
                 />
               ))}
@@ -701,10 +926,11 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => setCreateSourceOpen(false)}
+              type="button"
             >
               Cancel
             </button>
-            <button className="primary-btn" onClick={handleCreateSource}>
+            <button className="primary-btn" onClick={handleCreateSource} type="button">
               Mount
             </button>
           </>
@@ -759,10 +985,11 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => setCreateFolderOpen(false)}
+              type="button"
             >
               Cancel
             </button>
-            <button className="primary-btn" onClick={handleCreateFolder}>
+            <button className="primary-btn" onClick={handleCreateFolder} type="button">
               Create
             </button>
           </>
@@ -788,10 +1015,11 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => setRenameOpen(false)}
+              type="button"
             >
               Cancel
             </button>
-            <button className="primary-btn" onClick={handleRename}>
+            <button className="primary-btn" onClick={handleRename} type="button">
               Save
             </button>
           </>
@@ -809,6 +1037,36 @@ function SlideManagerPage() {
       </Modal>
 
       <Modal
+        open={renameSessionOpen}
+        title="Rename Compare Session"
+        onClose={() => setRenameSessionOpen(false)}
+        footer={
+          <>
+            <button
+              className="secondary-btn"
+              onClick={() => setRenameSessionOpen(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button className="primary-btn" onClick={handleRenameSession} type="button">
+              Save
+            </button>
+          </>
+        }
+      >
+        <div className="form-field">
+          <label className="form-label">Session name</label>
+          <input
+            className="form-input"
+            value={renameSessionValue}
+            onChange={(e) => setRenameSessionValue(e.target.value)}
+            placeholder="New session name"
+          />
+        </div>
+      </Modal>
+
+      <Modal
         open={deleteSourceOpen}
         title="Unmount Folder"
         onClose={() => setDeleteSourceOpen(false)}
@@ -817,18 +1075,19 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => setDeleteSourceOpen(false)}
+              type="button"
             >
               Cancel
             </button>
-            <button className="danger-btn" onClick={handleDeleteSource}>
+            <button className="danger-btn" onClick={handleDeleteSource} type="button">
               Unmount
             </button>
           </>
         }
       >
         <p className="modal-help-text">
-          Unmount <strong>{selectedSource?.name || "this source"}</strong>?
-          This removes the library from the app, but does not delete files on disk.
+          Unmount <strong>{selectedSource?.name || "this source"}</strong>? This removes
+          the library from the app, but does not delete files on disk.
         </p>
       </Modal>
 
@@ -841,18 +1100,45 @@ function SlideManagerPage() {
             <button
               className="secondary-btn"
               onClick={() => setDeleteOpen(false)}
+              type="button"
             >
               Cancel
             </button>
-            <button className="danger-btn" onClick={handleDelete}>
+            <button className="danger-btn" onClick={handleDelete} type="button">
               Delete
             </button>
           </>
         }
       >
         <p className="modal-help-text">
-          Delete <strong>{selectedItem?.name || "this item"}</strong>? This
-          cannot be undone.
+          Delete <strong>{selectedItem?.name || "this item"}</strong>? This cannot be
+          undone.
+        </p>
+      </Modal>
+
+      <Modal
+        open={deleteSessionOpen}
+        title="Delete Compare Session"
+        onClose={() => setDeleteSessionOpen(false)}
+        footer={
+          <>
+            <button
+              className="secondary-btn"
+              onClick={() => setDeleteSessionOpen(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button className="danger-btn" onClick={handleDeleteSession} type="button">
+              Delete
+            </button>
+          </>
+        }
+      >
+        <p className="modal-help-text">
+          Delete compare session{" "}
+          <strong>{selectedSession?.name || "this session"}</strong>? This only removes
+          the saved workspace, not the actual slide files.
         </p>
       </Modal>
     </div>

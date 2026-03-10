@@ -17,7 +17,7 @@ from api.uploads import router as uploads_router
 from api.sources import router as sources_router
 from services.source_registry_service import get_source_by_id, SourceNotFoundError
 from utils.image_utils import tint_grayscale_tile
-
+from api.compare_sessions import router as compare_sessions_router
 
 app = FastAPI(title="VitaminPScope API")
 
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(roi_ai_router)
 app.include_router(uploads_router)
 app.include_router(sources_router)
+app.include_router(compare_sessions_router, prefix="/compare-sessions")
 
 DATA_DIR = os.getenv("VITAMINP_DATA_ROOT", "/data/sample_slides")
 FALLBACK_TILE_SIZE = 256

@@ -8,6 +8,7 @@ import {
   } from "react";
   import { useNavigate, useSearchParams } from "react-router-dom";
   import { buildThumbnailUrl, fetchSlideMetadata } from "../api/slides";
+  import { createCompareSession } from "../api/compareSessions";
   import {
     DEFAULT_ANNOTATION_COLOR,
     TOOL_PAN,
@@ -22,7 +23,8 @@ import {
   import VivViewer from "../viewers/VivViewer";
   import "../styles/viewer-page.css";
   import "../styles/multi-viewer.css";
-  
+  import Modal from "../components/Modal";
+
   function moveItem(list, fromIndex, toIndex) {
     if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return list;
     const next = [...list];
@@ -55,6 +57,11 @@ import {
     const [lockedLeaderId, setLockedLeaderId] = useState(null);
     const [draggingId, setDraggingId] = useState(null);
     const [dragOverId, setDragOverId] = useState(null);
+    const [savingSession, setSavingSession] = useState(false);
+    const [saveCompareOpen, setSaveCompareOpen] = useState(false);
+    const [saveCompareName, setSaveCompareName] = useState("");
+    const [saveCompareMessage, setSaveCompareMessage] = useState("");
+    const [saveCompareError, setSaveCompareError] = useState("");
   
     const viewerRefs = useRef({});
     const leaderRef = useRef(null);
@@ -261,30 +268,80 @@ import {
       setDragOverId(entryId);
     }, []);
   
-    const handleDragOver = useCallback((event, entryId) => {
-      event.preventDefault();
-      if (dragOverId !== entryId) {
-        setDragOverId(entryId);
-      }
-    }, [dragOverId]);
+    const handleDragOver = useCallback(
+      (event, entryId) => {
+        event.preventDefault();
+        if (dragOverId !== entryId) {
+          setDragOverId(entryId);
+        }
+      },
+      [dragOverId]
+    );
   
-    const handleDrop = useCallback((event, targetId) => {
-      event.preventDefault();
+    const handleDrop = useCallback(
+      (event, targetId) => {
+        event.preventDefault();
   
-      setSlideEntries((prev) => {
-        const fromIndex = prev.findIndex((entry) => entry.id === draggingId);
-        const toIndex = prev.findIndex((entry) => entry.id === targetId);
-        return moveItem(prev, fromIndex, toIndex);
-      });
+        setSlideEntries((prev) => {
+          const fromIndex = prev.findIndex((entry) => entry.id === draggingId);
+          const toIndex = prev.findIndex((entry) => entry.id === targetId);
+          return moveItem(prev, fromIndex, toIndex);
+        });
   
-      setDraggingId(null);
-      setDragOverId(null);
-    }, [draggingId]);
+        setDraggingId(null);
+        setDragOverId(null);
+      },
+      [draggingId]
+    );
   
     const handleDragEnd = useCallback(() => {
       setDraggingId(null);
       setDragOverId(null);
     }, []);
+  
+    const handleSaveCompare = useCallback(() => {
+        if (slideEntries.length < 2) return;
+    
+        const defaultName =
+          slideEntries.length <= 3
+            ? slideEntries.map((entry) => entry.slide.name).join(" vs ")
+            : `${slideEntries[0]?.slide?.name || "Compare"} + ${slideEntries.length - 1} more`;
+    
+        setSaveCompareName(defaultName);
+        setSaveCompareError("");
+        setSaveCompareOpen(true);
+      }, [slideEntries]);
+
+      const handleConfirmSaveCompare = useCallback(async () => {
+        if (!saveCompareName.trim() || slideEntries.length < 2) {
+          setSaveCompareError("Please enter a session name.");
+          return;
+        }
+    
+        try {
+          setSavingSession(true);
+          setSaveCompareError("");
+    
+          await createCompareSession({
+            name: saveCompareName.trim(),
+            source_id: sourceId,
+            slides: slideEntries.map((entry) => entry.slide.path || entry.slide.name),
+            layout: gridMode,
+            sync_enabled: syncEnabled,
+          });
+    
+          setSaveCompareOpen(false);
+          setSaveCompareMessage(`Saved compare session: ${saveCompareName.trim()}`);
+    
+          window.setTimeout(() => {
+            setSaveCompareMessage("");
+          }, 2600);
+        } catch (error) {
+          setSaveCompareError(error.message || "Failed to save compare session.");
+        } finally {
+          setSavingSession(false);
+        }
+      }, [gridMode, saveCompareName, slideEntries, sourceId, syncEnabled]);
   
     useEffect(() => {
       if (!syncEnabled) {
@@ -395,9 +452,22 @@ import {
             <button className="viewer-btn-secondary" onClick={handleResetAllViews} type="button">
               Reset all
             </button>
+  
+            <button
+              className="viewer-btn"
+              onClick={handleSaveCompare}
+              type="button"
+              disabled={slideEntries.length < 2 || savingSession}
+            >
+              {savingSession ? "Saving..." : "Save Compare"}
+            </button>
           </div>
         </header>
-  
+        {saveCompareMessage ? (
+            <div className="multi-viewer-toast">
+            {saveCompareMessage}
+            </div>
+        ) : null}
         <div className="viewer-body multi-viewer-body">
           <main className="viewer-stage multi-viewer-stage">
             <div className="viewer-canvas-shell multi-viewer-shell">
@@ -941,6 +1011,67 @@ import {
             </div>
           </main>
         </div>
+        <Modal
+        open={saveCompareOpen}
+        title="Save Compare Session"
+        onClose={() => {
+          if (!savingSession) {
+            setSaveCompareOpen(false);
+            setSaveCompareError("");
+          }
+        }}
+        footer={
+          <>
+            <button
+              className="secondary-btn"
+              onClick={() => {
+                if (!savingSession) {
+                  setSaveCompareOpen(false);
+                  setSaveCompareError("");
+                }
+              }}
+              type="button"
+            >
+              Cancel
+            </button>
+
+            <button
+              className="primary-btn"
+              onClick={handleConfirmSaveCompare}
+              type="button"
+              disabled={savingSession}
+            >
+              {savingSession ? "Saving..." : "Save"}
+            </button>
+          </>
+        }
+      >
+        <div className="form-field">
+          <label className="form-label">Session name</label>
+          <input
+            className="form-input"
+            value={saveCompareName}
+            onChange={(e) => setSaveCompareName(e.target.value)}
+            placeholder="Tumor vs Adjacent"
+            autoFocus
+          />
+        </div>
+
+        <div className="multi-viewer-save-preview">
+          <div className="multi-viewer-save-preview__label">Slides in this session</div>
+          <div className="multi-viewer-save-preview__list">
+            {slideEntries.map((entry) => (
+              <span key={entry.id} className="multi-viewer-save-preview__chip">
+                {entry.slide.name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {saveCompareError ? (
+          <div className="multi-viewer-save-error">{saveCompareError}</div>
+        ) : null}
+      </Modal>
       </div>
     );
   }
