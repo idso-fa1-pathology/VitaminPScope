@@ -8,6 +8,19 @@ The application is built with React, FastAPI, OpenSeadragon, and Viv, and runs e
 
 ---
 
+[📄 Paper](#citation) • [🐛 Issues](https://github.com/idso-fa1-pathology/vitamin-p/issues) • [🐳 Docker](#-docker) • [📦 PyPI](https://pypi.org/project/vitaminp/)
+
+</div>
+
+
+---
+<p align="center">
+  <img src="./docs/figures/main.png"/>
+</p>
+
+
+---
+
 # Features
 
 ## Slide Manager Workspace
@@ -126,3 +139,4 @@ Deployment
 # License
 
 MIT License
+
