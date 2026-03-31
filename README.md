@@ -1,6 +1,6 @@
 # VitaminPScope
 
-**Interactive digital pathology platform for whole-slide visualization and AI-powered cell segmentation.**
+**Interactive digital pathology platform for whole-slide visualization and AI-powered whole-cell segmentation.**
 
 <div align="center">
 
