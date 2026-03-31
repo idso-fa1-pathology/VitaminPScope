@@ -1,143 +1,75 @@
 # VitaminPScope
 
-VitaminPScope is a lightweight web-based digital pathology platform for browsing, organizing, and viewing whole-slide images and multichannel microscopy data.
-
-It combines a modern Slide Manager workspace, high-performance viewers, and synchronized multi-slide comparison tools for research and diagnostic workflows.
-
-The application is built with React, FastAPI, OpenSeadragon, and Viv, and runs easily using Docker Compose
+**Interactive digital pathology platform for whole-slide visualization and AI-powered cell segmentation.**
 
 ---
 
-[📄 Paper](#citation) • [🐛 Issues](https://github.com/idso-fa1-pathology/vitamin-p/issues) • [🐳 Docker](#-docker) • [📦 PyPI](https://pypi.org/project/vitaminp/)
+## Overview
 
-</div>
+VitaminPScope is a lightweight web-based platform for:
 
+- Whole-slide image (WSI) viewing  
+- Multi-channel microscopy visualization  
+- Slide comparison and annotation  
+- Integration with VitaminP AI models  
 
----
-<p align="center">
-  <img src="./docs/figures/main.png"/>
-</p>
-
-
----
-
-# Features
-
-## Slide Manager Workspace
-
-* Browse slides and folders
-* Upload new slides
-* Create folders
-* Mount external data sources
-* Search and filter slides
-* Navigate using folder breadcrumbs
-* View saved compare sessions
-* View dataset statistics
-
-The Slide Manager UI was redesigned to be cleaner, modern, and easier to use while keeping the existing architecture and functionality intact.
+Built with React, FastAPI, OpenSeadragon, and Viv.
 
 ---
 
-## Whole-Slide Viewing
+## 🚀 Quick Start (Docker)
 
-* SVS / NDPI using OpenSeadragon
-* OME-TIFF using Viv
-* Fast zoom and pan
-* Scale bar
-* Measurement tools
+### 1. Install Docker
+https://docs.docker.com/get-docker/
 
----
+### 2. Run the app
 
-## Multichannel Microscopy
+```bash
+mkdir vitaminpscope
+cd vitaminpscope
 
-* Toggle channels
-* Adjust channel color
-* Control opacity
-* Real-time compositing
+curl -O https://raw.githubusercontent.com/idso-fa1-pathology/VitaminPScope/main/docker-compose.public.yml
 
----
-
-## Multi-Slide Compare View
-
-* Synchronized zoom and pan
-* Cross-slide inspection
-* Cross-slide inspection
-* Save compare sessions
-
----
-
-## Annotation Tools
-
-* Points
-* Lines
-* Rectangles
-* Measurements
-* Select / edit annotations
-
----
-
-# Project Structure
-
-VitaminPScope
-├── frontend
-├── backend
-├── ai_service
-├── data
-└── docker-compose.yml
-
----
-
-# Supported Slide Formats
-
-* SVS
-* NDPI
-* TIFF / OME-TIFF
-
----
-
-# Running the Application
-
-Requirements:
-
-* Docker
-* Docker Compose
-
-Start:
-
-```
-docker compose up --build
+docker compose up -d
 ```
 
-Open:
+### 3. Open in browser
 
-```
-http://localhost:5173
-```
+http://localhost:3000
 
 ---
 
-# Tech Stack
+## 📂 Data
 
-Frontend
+Place your slides in:
 
-* React
-* Vite
-* OpenSeadragon
-* Viv
+```
+./data/
+```
 
-Backend
-
-* FastAPI
-* Python
-
-Deployment
-
-* Docker
-* Docker Compose
+Supported formats:
+- SVS
+- NDPI
+- TIFF / OME-TIFF
 
 ---
 
-# License
+## 🧠 AI Model
+
+The VitaminP model is **already included in the Docker image**.  
+No additional setup required.
+
+---
+
+## 🛠 Tech Stack
+
+- Frontend: React + Vite
+- Backend: FastAPI
+- Viewer: OpenSeadragon + Viv
+- Deployment: Docker
+
+---
+
+## License
 
 MIT License
-
