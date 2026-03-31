@@ -4,7 +4,7 @@ VitaminPScope is a lightweight web-based digital pathology platform for browsing
 
 It combines a modern Slide Manager workspace, high-performance viewers, and synchronized multi-slide comparison tools for research and diagnostic workflows.
 
-The application is built with React, FastAPI, OpenSeadragon, and Viv, and runs easily using Docker Compose.
+The application is built with React, FastAPI, OpenSeadragon, and Viv, and runs easily using Docker Compose
 
 ---
 
