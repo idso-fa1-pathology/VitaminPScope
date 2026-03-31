@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: ghcr.io/idso-fa1-pathology/vitaminpscope/frontend:sha-699ad1e
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000
+      - VITE_AI_URL=http://localhost:8001
+
+  backend:
+    image: ghcr.io/idso-fa1-pathology/vitaminpscope/backend:sha-699ad1e
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - AI_SERVICE_URL=http://ai_service:8001
+      - VITAMINP_DATA_ROOT=/data/sample_slides
+      - VITAMINP_ALLOWED_SOURCE_ROOTS=/data
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+
+  ai_service:
+    image: ghcr.io/idso-fa1-pathology/vitaminpscope/ai_service:sha-699ad1e
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data:/data
+    environment:
+      - VITAMINP_DEVICE=cpu
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
