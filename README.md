@@ -61,6 +61,7 @@ The Slide Manager UI was redesigned to be cleaner, modern, and easier to use whi
 
 * Synchronized zoom and pan
 * Cross-slide inspection
+* Cross-slide inspection
 * Save compare sessions
 
 ---
