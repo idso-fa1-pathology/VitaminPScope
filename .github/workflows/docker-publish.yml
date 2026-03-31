@@ -8,14 +8,14 @@ on:
       - "backend/**"
       - "ai_service/**"
       - "docker-compose.yml"
-      - ".github/workflows/docker.yml"
+      - ".github/workflows/docker-publish.yml"
   pull_request:
     branches: ["main"]
     paths:
       - "frontend/**"
       - "backend/**"
       - "ai_service/**"
-      - ".github/workflows/docker.yml"
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 env:
@@ -80,4 +80,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
 
       - name: Print image digest
-        run: echo "${{ matrix.service.name }} digest: ${{ steps.build.outputs.digest }}"
+        run: |
+          echo "${{ matrix.service.name }} digest"
+          echo "${{ steps.build.outputs.digest }}"
