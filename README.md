@@ -39,9 +39,10 @@ https://docs.docker.com/get-docker/
 ### 2. Run VitaminPScope
 
 ```bash
-mkdir vitaminpscope && cd vitaminpscope
-curl -O https://raw.githubusercontent.com/idso-fa1-pathology/VitaminPScope/main/docker-compose.public.yml
-docker compose up -d
+git clone https://github.com/idso-fa1-pathology/VitaminPScope.git
+cd VitaminPScope
+
+docker compose -f docker-compose.public.yml up -d
 ```
 
 ---
