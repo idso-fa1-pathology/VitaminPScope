@@ -2,8 +2,8 @@ import traceback
 
 from fastapi import APIRouter, HTTPException
 
-from ai_service.models.schemas import InferenceRequest, InferenceResponse
-from ai_service.services.inference_service import run_inference_job
+from models.schemas import InferenceRequest, InferenceResponse
+from services.inference_service import run_inference_job
 
 router = APIRouter()
 

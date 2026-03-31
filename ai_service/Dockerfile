@@ -1,6 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -21,7 +22,6 @@ COPY . .
 
 RUN mkdir -p /app/checkpoints /app/outputs /app/logs
 
-# Download public checkpoint from Hugging Face
 RUN curl -L "https://huggingface.co/idso-fa1-pathology/VitaminP/resolve/main/vitamin_p_flex.pth" \
     -o /app/checkpoints/vitamin_p_flex.pth
 
