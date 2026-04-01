@@ -1,21 +1,34 @@
-# Security Policy
+# 🔐 Security Policy
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+The following versions of **VitaminPScope** are currently supported with security updates:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Supported |
+|--------|----------|
+| Latest (v1.x) | ✅ |
+| Older versions | ❌ |
+
+We strongly recommend using the latest version to receive security updates.
+
+---
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability, please report it **privately**.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+📧 **Contact:** your-email@domain.com  
+
+Please include:
+- A clear description of the issue  
+- Steps to reproduce  
+- Potential impact  
+
+---
+
+## Response Process
+
+- Initial response: within 48 hours  
+- Investigation and resolution: based on severity  
+
+We follow responsible disclosure and will work with you to resolve the issue before any public announcement.
