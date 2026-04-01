@@ -1,5 +1,4 @@
-# VitaminPScope
-
+# VitaminPScope — AI Digital Pathology Viewer for Whole-Slide Images (WSI)
 **Production-ready digital pathology app for whole-slide visualization and AI-powered cell segmentation.**
 
 <div align="center">
@@ -20,7 +19,9 @@
 
 ## ✨ Overview
 
-**VitaminPScope** is a lightweight, web-based platform for:
+**VitaminPScope** is an AI-powered digital pathology platform for viewing whole-slide images (WSI) and performing whole-cell segmentation using deep learning.
+
+It supports SVS, OME-TIFF, and multi-channel microscopy, and runs locally with Docker in a single command.
 
 - Whole-slide image (WSI) viewing  
 - Multi-channel microscopy visualization  
@@ -94,6 +95,9 @@ The **VitaminP model is already included** inside the Docker image.
 - **Deployment:** Docker  
 
 ---
+## 🔍 Keywords
+
+digital pathology, WSI viewer, whole-slide image viewer, pathology AI, cell segmentation, histopathology, H&E analysis, multiplex imaging, computational pathology, FastAPI, React viewer
 
 ## 📄 License
 
