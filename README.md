@@ -1,5 +1,9 @@
 # VitaminPScope — AI Digital Pathology Viewer for Whole-Slide Images (WSI)
 
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-success)
+
 **VitaminPScope** is an AI-powered digital pathology platform for viewing whole-slide images (WSI) and performing whole-cell segmentation using deep learning.
 
 It supports SVS, OME-TIFF, and multi-channel microscopy, and runs locally with Docker in a single command.
@@ -30,6 +34,25 @@ VitaminPScope is a production-ready, web-based platform for:
 - AI-powered whole-cell segmentation with **VitaminP**
 
 Built with **React + FastAPI + OpenSeadragon + Viv** — optimized for real-world deployment.
+
+**VitaminPScope is an open-source alternative to commercial digital pathology platforms (e.g., QuPath, HALO) with built-in AI segmentation.**
+
+---
+
+## 💡 Why VitaminPScope
+
+- 🧠 Built-in AI — no external pipelines required  
+- ⚡ Runs locally with Docker in minutes  
+- 🔬 Designed for real pathology workflows  
+- 📊 Scales to gigapixel whole-slide images  
+
+---
+
+## 🎬 Demo
+
+<p align="center">
+  <img src="./docs/figures/wsi-viewer-demo.gif"/>
+</p>
 
 ---
 
@@ -100,6 +123,31 @@ This platform integrates **VitaminP**, a state-of-the-art AI model for whole-cel
 
 ---
 
+## 🧪 Use Cases
+
+- Histopathology research (H&E analysis)  
+- Spatial transcriptomics validation  
+- Multiplex imaging visualization  
+- AI-assisted cell segmentation workflows  
+- Digital pathology education and demos  
+
+---
+
+## 🏗 Architecture
+
+- **Frontend:** React + OpenSeadragon (WSI rendering)  
+- **Backend:** FastAPI (API + orchestration)  
+- **AI Service:** VitaminP inference engine  
+- **Deployment:** Docker Compose (multi-service)  
+
+---
+
+## 🔌 Extensibility
+
+VitaminPScope can be extended via API or integrated into custom pipelines for automated pathology workflows.
+
+---
+
 ## 🧠 AI Model
 
 The **VitaminP model is already included** inside the Docker image.
@@ -107,15 +155,6 @@ The **VitaminP model is already included** inside the Docker image.
 ✅ No downloads  
 ✅ No configuration  
 ✅ Ready out of the box  
-
----
-
-## 🛠 Tech Stack
-
-- **Frontend:** React + Vite  
-- **Backend:** FastAPI  
-- **Viewer:** OpenSeadragon + Viv  
-- **Deployment:** Docker  
 
 ---
 
