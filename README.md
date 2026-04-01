@@ -18,7 +18,7 @@
 
 ---
 
-## Overview
+## ✨ Overview
 
 **VitaminPScope** is a lightweight, web-based platform for:
 
@@ -27,21 +27,37 @@
 - Slide comparison and annotation  
 - Integrated **VitaminP AI segmentation**
 
-Built with **React + FastAPI + OpenSeadragon + Viv**, designed for fast deployment and real-world usage.
+Built with **React + FastAPI + OpenSeadragon + Viv** — designed for **fast, real-world deployment**.
 
 ---
 
 # 🚀 Quick Start
 
-### Run the full app in one command
+### 1. Clone repository
+
+```bash
+git clone https://github.com/idso-fa1-pathology/VitaminPScope.git
+```
+
+### 2. Move into project
+
+```bash
+cd VitaminPScope
+```
+
+### 3. Launch the app
 
 ```bash
 docker compose -f docker-compose.public.yml up -d
 ```
 
-Then open:
+---
 
-👉 http://localhost:3000
+## 🌐 Open the app
+
+Once running, open in your browser:
+
+👉 **http://localhost:3000**
 
 ---
 
@@ -53,29 +69,32 @@ Place your slides in:
 ./data/
 ```
 
-Supported formats:
-- SVS
-- NDPI
-- TIFF / OME-TIFF
+**Supported formats:**
+- SVS  
+- NDPI  
+- TIFF / OME-TIFF  
 
 ---
 
 ## 🧠 AI Model
 
-The **VitaminP model is already included** in the Docker image.  
-No setup, no downloads — ready out of the box.
+The **VitaminP model is already included** inside the Docker image.
+
+✅ No downloads  
+✅ No configuration  
+✅ Ready out of the box  
 
 ---
 
 ## 🛠 Tech Stack
 
-- Frontend: React + Vite  
-- Backend: FastAPI  
-- Viewer: OpenSeadragon + Viv  
-- Deployment: Docker  
+- **Frontend:** React + Vite  
+- **Backend:** FastAPI  
+- **Viewer:** OpenSeadragon + Viv  
+- **Deployment:** Docker  
 
 ---
 
-## License
+## 📄 License
 
 MIT License
