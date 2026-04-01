@@ -8,3 +8,5 @@ requests
 python-multipart
 tifffile
 opencv-python-headless
+pandas
+pyarrow

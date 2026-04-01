@@ -11,7 +11,8 @@ from fastapi import FastAPI, Response, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-
+from api.exports import router as exports_router
+from api.analysis import router as analysis_router
 from api.roi_ai import router as roi_ai_router
 from api.uploads import router as uploads_router
 from api.sources import router as sources_router
@@ -34,6 +35,8 @@ app.include_router(roi_ai_router)
 app.include_router(uploads_router)
 app.include_router(sources_router)
 app.include_router(compare_sessions_router, prefix="/compare-sessions")
+app.include_router(exports_router)
+app.include_router(analysis_router)
 
 DATA_DIR = os.getenv("VITAMINP_DATA_ROOT", "/data/sample_slides")
 FALLBACK_TILE_SIZE = 256

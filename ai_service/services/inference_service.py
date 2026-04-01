@@ -22,23 +22,14 @@ def _as_feature_collection(data) -> dict:
             return data
 
         if isinstance(data.get("features"), list):
-            return {
-                "type": "FeatureCollection",
-                "features": data["features"],
-            }
+            return {"type": "FeatureCollection", "features": data["features"]}
 
         for key in ("detections", "objects", "items", "data"):
             if isinstance(data.get(key), list):
-                return {
-                    "type": "FeatureCollection",
-                    "features": data[key],
-                }
+                return {"type": "FeatureCollection", "features": data[key]}
 
     if isinstance(data, list):
-        return {
-            "type": "FeatureCollection",
-            "features": data,
-        }
+        return {"type": "FeatureCollection", "features": data}
 
     return {"type": "FeatureCollection", "features": []}
 
@@ -51,10 +42,12 @@ def _load_feature_collection(output_dir: str, branch_name: str) -> dict:
                     data = json.load(f)
 
                 fc = _as_feature_collection(data)
+
                 print(
                     f"[inference_service] Loaded {candidate.name} for {branch_name} "
                     f"with {len(fc.get('features', []))} features"
                 )
+
                 return fc
 
             except Exception as exc:
@@ -65,7 +58,26 @@ def _load_feature_collection(output_dir: str, branch_name: str) -> dict:
     return {"type": "FeatureCollection", "features": []}
 
 
-def run_inference_job(payload):
+def _extract_instances(feature_collection: dict, branch_name: str):
+    instances = []
+
+    for i, feat in enumerate(feature_collection.get("features", [])):
+        geometry = feat.get("geometry", {})
+        props = feat.get("properties", {})
+
+        instances.append({
+            "id": f"{branch_name}_{i}",
+            "type": branch_name,
+            "geometry": geometry,
+            "centroid": props.get("centroid"),
+            "area": props.get("area"),
+            "confidence": props.get("confidence"),
+        })
+
+    return instances
+
+
+def run_inference_job(payload, mode="wsi"):
     slide_name = Path(payload.wsi_path).stem
     output_dir = payload.output_dir or str(OUTPUT_DIR / slide_name)
 
@@ -95,12 +107,17 @@ def run_inference_job(payload):
         mif_channel_config=payload.mif_channel_config,
     )
 
+    all_instances = []
     output_files = {}
     raw_results = {}
 
     for branch_name, branch_result in results.items():
         branch_output_dir = branch_result.get("output_dir", output_dir)
-        feature_collection = _load_feature_collection(branch_output_dir, branch_name)
+
+        fc = _load_feature_collection(branch_output_dir, branch_name)
+        instances = _extract_instances(fc, branch_name)
+
+        all_instances.extend(instances)
 
         output_files[branch_name] = {
             "output_dir": branch_output_dir,
@@ -108,19 +125,33 @@ def run_inference_job(payload):
         }
 
         raw_results[branch_name] = {
-            "feature_collection": feature_collection,
+            "feature_collection": fc,
             "num_detections": branch_result.get("num_detections", 0),
+        }
+
+    if mode == "wsi":
+        return {
+            "instances": all_instances,
+            "output_dir": output_dir,
+            "branches": output_files,
+            "raw_results": raw_results,
+            "stats": {
+                "requested_branches": payload.branches,
+                "total_instances": len(all_instances),
+            },
         }
 
     return {
         "status": "completed",
-        "message": "Inference finished successfully",
+        "message": "ROI inference completed",
         "outputs": {
+            "instances": all_instances,
             "output_dir": output_dir,
             "branches": output_files,
         },
         "raw_results": raw_results,
         "stats": {
             "requested_branches": payload.branches,
+            "total_instances": len(all_instances),
         },
     }

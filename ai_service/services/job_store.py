@@ -9,6 +9,14 @@ from uuid import uuid4
 from models.schemas import InferenceJobResponse, InferenceRequest
 
 
+# ✅ Job status definitions (simple, explicit)
+class JobStatus:
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 @dataclass
 class _JobRecord:
     job_id: str
@@ -16,7 +24,14 @@ class _JobRecord:
     created_at: datetime
     updated_at: datetime
     request: InferenceRequest
-    outputs: dict = field(default_factory=dict)
+
+    # ✅ Structured outputs for downstream export + analysis
+    outputs: dict = field(default_factory=lambda: {
+        "instances": [],        # list of polygons / detections
+        "tiles_processed": 0,   # progress tracking
+        "metadata": {}          # optional global info
+    })
+
     error: Optional[str] = None
     log_path: Optional[str] = None
 
@@ -32,7 +47,7 @@ class InMemoryJobStore:
             now = datetime.now(timezone.utc)
             self._jobs[job_id] = _JobRecord(
                 job_id=job_id,
-                status="queued",
+                status=JobStatus.QUEUED,
                 created_at=now,
                 updated_at=now,
                 request=request,
@@ -56,5 +71,29 @@ class InMemoryJobStore:
             record.updated_at = datetime.now(timezone.utc)
             return InferenceJobResponse(**record.__dict__)
 
+    # ✅ Lifecycle helpers (clean API)
+    def set_running(self, job_id: str):
+        return self.update(job_id, status=JobStatus.RUNNING)
 
+    def set_completed(self, job_id: str, outputs: dict):
+        return self.update(job_id, status=JobStatus.COMPLETED, outputs=outputs)
+
+    def set_failed(self, job_id: str, error: str):
+        return self.update(job_id, status=JobStatus.FAILED, error=error)
+
+    # ✅ Streaming tile accumulation (important for WSI)
+    def append_outputs(self, job_id: str, instances: list, tile_count: int = 1):
+        with self._lock:
+            record = self._jobs.get(job_id)
+            if not record:
+                return None
+
+            record.outputs["instances"].extend(instances)
+            record.outputs["tiles_processed"] += tile_count
+            record.updated_at = datetime.now(timezone.utc)
+
+            return InferenceJobResponse(**record.__dict__)
+
+
+# ✅ Singleton (already used in your system)
 job_store = InMemoryJobStore()
