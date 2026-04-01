@@ -1,8 +1,10 @@
 # VitaminPScope
 
-**Interactive digital pathology platform for whole-slide visualization and AI-powered whole-cell segmentation.**
+**Production-ready digital pathology app for whole-slide visualization and AI-powered cell segmentation.**
 
 <div align="center">
+
+🚀 **Run in one command — no setup, no configuration**
 
 [🐳 Docker](#-quick-start) • [🐛 Issues](https://github.com/idso-fa1-pathology/VitaminPScope/issues)
 
@@ -18,36 +20,26 @@
 
 ## Overview
 
-VitaminPScope is a lightweight web-based platform for:
+**VitaminPScope** is a lightweight, web-based platform for:
 
 - Whole-slide image (WSI) viewing  
 - Multi-channel microscopy visualization  
 - Slide comparison and annotation  
-- Integration with **VitaminP AI models**  
+- Integrated **VitaminP AI segmentation**
 
-Built with **React + FastAPI + OpenSeadragon + Viv**.
+Built with **React + FastAPI + OpenSeadragon + Viv**, designed for fast deployment and real-world usage.
 
 ---
 
 # 🚀 Quick Start
 
-### 1. Install Docker  
-https://docs.docker.com/get-docker/
-
----
-
-### 2. Run VitaminPScope
+### Run the full app in one command
 
 ```bash
-git clone https://github.com/idso-fa1-pathology/VitaminPScope.git
-cd VitaminPScope
-
 docker compose -f docker-compose.public.yml up -d
 ```
 
----
-
-### 3. Open in browser
+Then open:
 
 👉 http://localhost:3000
 
@@ -71,7 +63,7 @@ Supported formats:
 ## 🧠 AI Model
 
 The **VitaminP model is already included** in the Docker image.  
-No additional setup required.
+No setup, no downloads — ready out of the box.
 
 ---
 
