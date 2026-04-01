@@ -6,7 +6,6 @@ __pycache__
 .gitignore
 .DS_Store
 logs
-models
 checkpoints
 *.pt
 *.pth
