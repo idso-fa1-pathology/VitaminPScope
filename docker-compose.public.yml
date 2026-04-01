@@ -26,5 +26,5 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - VITAMINP_DEVICE=cpu
+      - VITAMINP_DEVICE=auto
     command: uvicorn main:app --host 0.0.0.0 --port 8001
