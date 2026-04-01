@@ -22,9 +22,9 @@ COPY . .
 
 RUN mkdir -p /app/checkpoints /app/outputs /app/logs
 
-RUN curl -L "https://huggingface.co/idso-fa1-pathology/VitaminP/resolve/main/vitamin_p_flex.pth" \
-    -o /app/checkpoints/vitamin_p_flex.pth
+# RUN curl -L "https://huggingface.co/idso-fa1-pathology/VitaminP/resolve/main/vitamin_p_flex.pth" \
+#     -o /app/checkpoints/vitamin_p_flex.pth
 
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
