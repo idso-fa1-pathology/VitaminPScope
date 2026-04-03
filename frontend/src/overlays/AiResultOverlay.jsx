@@ -10,7 +10,6 @@ import {
   isFeatureCollection,
 } from "../ai/aiOverlayUtils";
 
-
 function renderFeature(feature, imageToScreen, layer, keyPrefix, onClickFeature) {
   const geometry = feature?.geometry;
   const shapes = geometryToSvgShapes(geometry, imageToScreen);
@@ -33,7 +32,7 @@ function renderFeature(feature, imageToScreen, layer, keyPrefix, onClickFeature)
         e.stopPropagation();
         onClickFeature?.(feature, e);
       },
-      style: { cursor: "pointer" },
+      style: { cursor: "pointer", pointerEvents: "auto" },
     };
 
     if (shape.kind === "point") {
@@ -82,7 +81,6 @@ function renderFeature(feature, imageToScreen, layer, keyPrefix, onClickFeature)
   });
 }
 
-
 function AiResultOverlay({ layers = [], imageToScreen, renderTick = 0 }) {
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -114,6 +112,7 @@ function AiResultOverlay({ layers = [], imageToScreen, renderTick = 0 }) {
           zIndex: 14,
           width: "100%",
           height: "100%",
+          pointerEvents: "none",
         }}
       >
         {visibleLayers.map((layer) => {
@@ -135,7 +134,6 @@ function AiResultOverlay({ layers = [], imageToScreen, renderTick = 0 }) {
         })}
       </svg>
 
-      {/* 🔥 Tooltip */}
       {selectedFeature && (
         <div
           style={{
@@ -149,6 +147,7 @@ function AiResultOverlay({ layers = [], imageToScreen, renderTick = 0 }) {
             fontSize: "12px",
             zIndex: 9999,
             maxWidth: "220px",
+            pointerEvents: "none",
           }}
         >
           <div><b>Type:</b> {props.type || "N/A"}</div>
