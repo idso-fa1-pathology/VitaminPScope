@@ -1,4 +1,3 @@
-
 services:
   frontend:
     build: ./frontend
@@ -8,8 +7,9 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000
-      - VITE_AI_URL=http://localhost:8001
+      - VITE_BACKEND_URL=/api
+      - VITE_AI_URL=/api
+    command: npm run dev -- --host 0.0.0.0 --port 3000
 
   backend:
     build: ./backend
@@ -18,7 +18,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data
-      - /Users/yshokrollahi/Downloads:/mounted/downloads
+      - ./mounted:/mounted
     environment:
       - AI_SERVICE_URL=http://ai_service:8001
       - VITAMINP_DATA_ROOT=/data/sample_slides

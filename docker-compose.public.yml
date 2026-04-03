@@ -4,8 +4,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000
-      - VITE_AI_URL=http://localhost:8001
+      - VITE_BACKEND_URL=/api
+      - VITE_AI_URL=/api
 
   backend:
     image: ghcr.io/idso-fa1-pathology/vitaminpscope/backend:latest
@@ -21,8 +21,6 @@ services:
 
   ai_service:
     image: ghcr.io/idso-fa1-pathology/vitaminpscope/ai_service:latest
-    ports:
-      - "8001:8001"
     volumes:
       - ./data:/data
     environment:
