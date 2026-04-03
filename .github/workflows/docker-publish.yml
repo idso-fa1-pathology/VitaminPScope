@@ -35,7 +35,7 @@ jobs:
         service:
           - name: frontend
             context: ./frontend
-            dockerfile: ./frontend/Dockerfile
+            dockerfile: ./frontend/Dockerfile.prod
           - name: backend
             context: ./backend
             dockerfile: ./backend/Dockerfile
