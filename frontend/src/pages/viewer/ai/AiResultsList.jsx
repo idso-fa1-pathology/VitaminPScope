@@ -168,80 +168,86 @@ function exportResult(item, format = "geojson") {
 }
 
 async function exportRoiImage(item) {
-  if (!item?.id) {
-    window.alert("ROI image export is not available.");
+  // 🔍 Debug logs (critical for tracing)
+  console.log("ROI export item:", item);
+  console.log("ROI export payload:", {
+    slide_path: item?.slidePath,
+    source_id: item?.sourceId || "default",
+    roi: item?.roi,
+  });
+
+  // ✅ Basic validation
+  if (!item?.slidePath || !item?.roi) {
+    window.alert("Missing slide path or ROI. Cannot export.");
     return;
   }
 
   try {
-    const response = await fetch(`/api/exports/${item.id}?format=png`, {
-      method: "GET",
+    const response = await fetch(`/api/exports/roi-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slide_path: item.slidePath,
+        source_id: item.sourceId || "default",
+        roi: item.roi,
+      }),
     });
 
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
-    const contentDisposition = response.headers.get("content-disposition") || "";
-
-    const buffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    const first8 = Array.from(bytes.slice(0, 8))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ");
-
-    console.log("ROI export status:", response.status);
-    console.log("ROI export content-type:", contentType);
-    console.log("ROI export content-disposition:", contentDisposition);
-    console.log("ROI export first bytes:", first8);
+    // 🔍 Response diagnostics
+    console.log("Export response status:", response.status);
+    console.log(
+      "Export response content-type:",
+      response.headers.get("content-type")
+    );
 
     if (!response.ok) {
-      const text = new TextDecoder().decode(bytes);
-      throw new Error(text || "Could not export ROI image.");
+      let detail = "Could not export ROI image.";
+
+      try {
+        const text = await response.text();
+        console.log("Export error response text:", text);
+
+        if (text) {
+          try {
+            const errorData = JSON.parse(text);
+            detail = errorData?.detail || text || detail;
+          } catch {
+            detail = text;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      throw new Error(detail);
     }
 
-    const isPng =
-      bytes.length >= 8 &&
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47 &&
-      bytes[4] === 0x0d &&
-      bytes[5] === 0x0a &&
-      bytes[6] === 0x1a &&
-      bytes[7] === 0x0a;
+    const blob = await response.blob();
 
-    const isTiff =
-      bytes.length >= 4 &&
-      (
-        (bytes[0] === 0x49 && bytes[1] === 0x49 && bytes[2] === 0x2a && bytes[3] === 0x00) ||
-        (bytes[0] === 0x4d && bytes[1] === 0x4d && bytes[2] === 0x00 && bytes[3] === 0x2a)
-      );
+    // 🔍 Validate returned file
+    console.log("Blob size:", blob.size);
+    console.log("Blob type:", blob.type);
 
-    if (!isPng && !isTiff) {
-      const textPreview = new TextDecoder().decode(bytes.slice(0, 200));
-      throw new Error(
-        `Export did not return a valid PNG/TIFF. content-type=${contentType || "unknown"}, first-bytes=${first8}, preview=${textPreview}`
-      );
+    if (!blob || blob.size === 0) {
+      throw new Error("Received empty file from server.");
     }
 
-    let extension = "png";
-    let mimeType = "image/png";
-
-    if (isTiff || contentType.includes("image/tiff") || contentType.includes("image/tif")) {
-      extension = "tiff";
-      mimeType = "image/tiff";
-    }
-
-    const blob = new Blob([buffer], { type: mimeType });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `roi_${item.id}.${extension}`;
+
+    // ✅ Handle PNG vs TIFF correctly
+    const ext = blob.type === "image/tiff" ? "tiff" : "png";
+    a.download = `roi_${item.id}.${ext}`;
+
     document.body.appendChild(a);
     a.click();
     a.remove();
 
     URL.revokeObjectURL(url);
   } catch (error) {
+    console.error("ROI export failed:", error);
     window.alert(error?.message || "Could not export ROI image.");
   }
 }

@@ -366,6 +366,8 @@ export function useAiInference({
       const nextLayers = enrichLayersWithDisplay(result?.layers || []);
       const nextResult = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        slidePath: selectedSlide.path,
+        sourceId: selectedSlide.sourceId || currentSourceId,
         createdAt: new Date().toISOString(),
         mode: aiMode,
         modelId: selectedModel.id,
