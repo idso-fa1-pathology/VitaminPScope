@@ -26,5 +26,8 @@ services:
       - ./data:/data
     environment:
       - VITAMINP_DEVICE=auto
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     command: uvicorn main:app --host 0.0.0.0 --port 8001
     restart: unless-stopped
+    gpus: all
