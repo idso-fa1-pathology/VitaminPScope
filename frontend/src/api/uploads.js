@@ -1,7 +1,10 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "/api";
 
-export function uploadFiles(files, targetPath = "", { overwrite = false, onProgress } = {}) {
+export function uploadFiles(
+  files,
+  targetPath = "",
+  { overwrite = false, onProgress } = {}
+) {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
 
@@ -13,7 +16,7 @@ export function uploadFiles(files, targetPath = "", { overwrite = false, onProgr
     formData.append("overwrite", String(Boolean(overwrite)));
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BACKEND_URL}/uploads`);
+    xhr.open("POST", `${API_BASE}/uploads`);
 
     xhr.upload.onprogress = (event) => {
       if (!onProgress || !event.lengthComputable) return;

@@ -1,8 +1,7 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "/api";
 
 export async function fetchSources() {
-  const res = await fetch(`${BACKEND_URL}/sources`);
+  const res = await fetch(`${API_BASE}/sources`);
 
   if (!res.ok) {
     const message = await res.text();
@@ -14,7 +13,7 @@ export async function fetchSources() {
 
 export async function fetchSource(sourceId) {
   const res = await fetch(
-    `${BACKEND_URL}/sources/${encodeURIComponent(sourceId)}`
+    `${API_BASE}/sources/${encodeURIComponent(sourceId)}`
   );
 
   if (!res.ok) {
@@ -26,7 +25,7 @@ export async function fetchSource(sourceId) {
 }
 
 export async function createSource(payload) {
-  const res = await fetch(`${BACKEND_URL}/sources`, {
+  const res = await fetch(`${API_BASE}/sources`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -44,7 +43,7 @@ export async function createSource(payload) {
 
 export async function updateSource(sourceId, payload) {
   const res = await fetch(
-    `${BACKEND_URL}/sources/${encodeURIComponent(sourceId)}`,
+    `${API_BASE}/sources/${encodeURIComponent(sourceId)}`,
     {
       method: "PATCH",
       headers: {
@@ -64,7 +63,7 @@ export async function updateSource(sourceId, payload) {
 
 export async function deleteSource(sourceId) {
   const res = await fetch(
-    `${BACKEND_URL}/sources/${encodeURIComponent(sourceId)}`,
+    `${API_BASE}/sources/${encodeURIComponent(sourceId)}`,
     {
       method: "DELETE",
     }

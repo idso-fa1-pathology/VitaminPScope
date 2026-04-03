@@ -1,5 +1,4 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "/api";
 
 function appendSourceId(params, sourceId = "default") {
   params.set("source_id", sourceId || "default");
@@ -20,7 +19,7 @@ export async function fetchSlides(path = "", sourceId = "default") {
   appendSourceId(params, sourceId);
 
   const query = params.toString();
-  const url = `${BACKEND_URL}/slides${query ? `?${query}` : ""}`;
+  const url = `${API_BASE}/slides${query ? `?${query}` : ""}`;
 
   const res = await fetch(url);
 
@@ -41,7 +40,7 @@ export async function fetchSlideMetadata(slideName, sourceId = "default") {
   appendSourceId(params, sourceId);
 
   const res = await fetch(
-    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/metadata?${params.toString()}`
+    `${API_BASE}/slide/${encodeURIComponent(slideName)}/metadata?${params.toString()}`
   );
 
   if (!res.ok) {
@@ -57,7 +56,7 @@ export async function fetchSlideMetadata(slideName, sourceId = "default") {
 ----------------------------- */
 
 export async function createFolder(name, parentPath = "", sourceId = "default") {
-  const res = await fetch(`${BACKEND_URL}/folders`, {
+  const res = await fetch(`${API_BASE}/folders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -78,7 +77,7 @@ export async function createFolder(name, parentPath = "", sourceId = "default") 
 }
 
 export async function renameItem(oldPath, newName, sourceId = "default") {
-  const res = await fetch(`${BACKEND_URL}/items/rename`, {
+  const res = await fetch(`${API_BASE}/items/rename`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +98,7 @@ export async function renameItem(oldPath, newName, sourceId = "default") {
 }
 
 export async function deleteItem(path, sourceId = "default") {
-  const res = await fetch(`${BACKEND_URL}/items`, {
+  const res = await fetch(`${API_BASE}/items`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -137,7 +136,7 @@ export function buildTileUrl(slideName, z, x, y, options = {}) {
 
   const query = params.toString();
 
-  return `${BACKEND_URL}/slide/${encodeURIComponent(
+  return `${API_BASE}/slide/${encodeURIComponent(
     slideName
   )}/tiles/${z}/${x}/${y}${query ? `?${query}` : ""}`;
 }
@@ -161,7 +160,7 @@ export function buildThumbnailUrl(slideName, options = {}) {
 
   const query = params.toString();
 
-  return `${BACKEND_URL}/slide/${encodeURIComponent(
+  return `${API_BASE}/slide/${encodeURIComponent(
     slideName
   )}/thumbnail${query ? `?${query}` : ""}`;
 }
@@ -170,7 +169,7 @@ export function buildSlideSourceUrl(slideName, sourceId = "default") {
   const params = new URLSearchParams();
   appendSourceId(params, sourceId);
 
-  return `${BACKEND_URL}/slide/${encodeURIComponent(
+  return `${API_BASE}/slide/${encodeURIComponent(
     slideName
   )}/source?${params.toString()}`;
 }
@@ -184,7 +183,7 @@ export async function fetchVivInfo(slideName, sourceId = "default") {
   appendSourceId(params, sourceId);
 
   const res = await fetch(
-    `${BACKEND_URL}/slide/${encodeURIComponent(slideName)}/viv?${params.toString()}`
+    `${API_BASE}/slide/${encodeURIComponent(slideName)}/viv?${params.toString()}`
   );
 
   if (!res.ok) {
@@ -204,7 +203,7 @@ export async function runRoiAiSegmentation(slideName, payload, sourceId = "defau
   appendSourceId(params, sourceId);
 
   const res = await fetch(
-    `${BACKEND_URL}/slide/${encodeURIComponent(
+    `${API_BASE}/slide/${encodeURIComponent(
       slideName
     )}/ai/roi-segmentation?${params.toString()}`,
     {

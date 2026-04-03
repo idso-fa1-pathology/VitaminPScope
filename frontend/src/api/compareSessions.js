@@ -1,8 +1,4 @@
-const API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
-  (typeof window !== "undefined"
-    ? window.location.origin.replace(/:\d+$/, ":8000")
-    : "http://localhost:8000");
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "/api";
 
 async function parseResponse(response) {
   let data = null;

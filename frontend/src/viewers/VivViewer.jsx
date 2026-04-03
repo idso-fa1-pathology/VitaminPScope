@@ -15,11 +15,7 @@ import { TOOL_AI, TOOL_PAN, TOOL_SELECT } from "../annotations/annotationTypes";
 import { getMetersPerPixel, getVivScaleBar } from "./scaleBarUtils";
 import AiResultOverlay from "../overlays/AiResultOverlay";
 import ViewerMiniMap from "../components/ViewerMiniMap";
-const API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
-  (typeof window !== "undefined"
-    ? window.location.origin.replace(/:\d+$/, ":8000")
-    : "http://localhost:8000");
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "/api";
 
 const ORTHO_VIEW = new OrthographicView({ id: "ortho" });
 
