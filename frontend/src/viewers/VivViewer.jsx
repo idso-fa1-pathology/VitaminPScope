@@ -409,11 +409,13 @@ const VivViewer = forwardRef(function VivViewer(
 
   const sourceUrl = useMemo(() => {
     if (!slide) return null;
-
+  
     const slidePath = slide.path || slide.name;
-    return `${API_BASE}/slide/${encodeURIComponent(
+    const path = `${API_BASE}/slide/${encodeURIComponent(
       slidePath
     )}/source?source_id=${encodeURIComponent(sourceId)}`;
+  
+    return new URL(path, window.location.origin).toString();
   }, [slide, sourceId]);
 
   const thumbnailUrl = useMemo(() => {

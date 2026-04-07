@@ -169,9 +169,11 @@ export function buildSlideSourceUrl(slideName, sourceId = "default") {
   const params = new URLSearchParams();
   appendSourceId(params, sourceId);
 
-  return `${API_BASE}/slide/${encodeURIComponent(
+  const path = `${API_BASE}/slide/${encodeURIComponent(
     slideName
   )}/source?${params.toString()}`;
+
+  return new URL(path, window.location.origin).toString();
 }
 
 /* -----------------------------
