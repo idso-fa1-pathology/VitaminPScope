@@ -51,7 +51,7 @@ Built with **React + FastAPI + OpenSeadragon + Viv** — optimized for real-worl
 ## 🎬 Demo
 
 <p align="center">
-  <img src="./docs/figures/wsi-viewer-demo.gif"/>
+  <img src="./docs/video/demo.gif"/>
 </p>
 
 ---
