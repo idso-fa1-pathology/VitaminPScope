@@ -1,6 +1,7 @@
 # macOS
 **/.DS_Store
 .DS_Store
+data/users/
 # Python cache
 **/__pycache__/
 **/*.pyc

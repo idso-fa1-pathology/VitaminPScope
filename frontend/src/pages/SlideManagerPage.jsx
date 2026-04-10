@@ -118,7 +118,7 @@ function SlideManagerPage() {
   const [loading, setLoading] = useState(false);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
-  const [currentSourceId, setCurrentSourceId] = useState("default");
+  const [currentSourceId, setCurrentSourceId] = useState("my-files");
 
   const [sources, setSources] = useState([]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
@@ -160,9 +160,12 @@ function SlideManagerPage() {
         !nextSources.some((source) => source.id === currentSourceId) &&
         nextSources.length
       ) {
-        const defaultSource =
-          nextSources.find((source) => source.is_default) || nextSources[0];
-        setCurrentSourceId(defaultSource.id);
+        const preferredSource =
+          nextSources.find((source) => source.id === "my-files") ||
+          nextSources.find((source) => source.is_default) ||
+          nextSources[0];
+      
+        setCurrentSourceId(preferredSource.id);
         setCurrentPath("");
       }
     } catch (err) {
@@ -451,9 +454,16 @@ function SlideManagerPage() {
   };
 
   const handleUploadComplete = async (response) => {
-    await loadSlides(currentPath, currentSourceId);
-
     const failedCount = response?.failed?.length || 0;
+  
+    // 🚀 Switch to user workspace after upload
+    const userSourceId = "my-files";
+  
+    setCurrentSourceId(userSourceId);
+    setCurrentPath("");
+  
+    await loadSlides("", userSourceId);
+  
     if (failedCount === 0) {
       setUploadOpen(false);
     }

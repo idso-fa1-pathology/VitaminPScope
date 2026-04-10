@@ -19,6 +19,8 @@ from api.sources import router as sources_router
 from services.source_registry_service import get_source_by_id, SourceNotFoundError
 from utils.image_utils import tint_grayscale_tile
 from api.compare_sessions import router as compare_sessions_router
+from dependencies.auth import get_current_user_key
+from fastapi import Depends
 
 app = FastAPI(title="VitaminPScope API")
 
@@ -139,9 +141,12 @@ def sanitize_relative_path(path: str) -> str:
     return path
 
 
-def get_source_root(source_id: str = "default") -> str:
+def get_source_root(
+    source_id: str = "default",
+    user_key: str | None = None,
+) -> str:
     try:
-        source = get_source_by_id(source_id)
+        source = get_source_by_id(source_id, user_key=user_key)
     except SourceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -156,9 +161,13 @@ def ensure_source_dir(source_id: str = "default"):
     os.makedirs(root, exist_ok=True)
 
 
-def resolve_source_path(source_id: str, relative_path: str) -> str:
+def resolve_source_path(
+    source_id: str,
+    relative_path: str,
+    user_key: str | None = None,
+) -> str:
     safe_rel = sanitize_relative_path(relative_path)
-    source_root = get_source_root(source_id)
+    source_root = get_source_root(source_id, user_key=user_key)
     full_path = os.path.abspath(os.path.join(source_root, safe_rel))
 
     if not full_path.startswith(source_root):
@@ -167,8 +176,12 @@ def resolve_source_path(source_id: str, relative_path: str) -> str:
     return full_path
 
 
-def get_slide_path(source_id: str, filename: str) -> str:
-    filepath = resolve_source_path(source_id, filename)
+def get_slide_path(
+    source_id: str,
+    filename: str,
+    user_key: str | None = None,
+) -> str:
+    filepath = resolve_source_path(source_id, filename, user_key=user_key)
     if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="Slide not found")
     return filepath
@@ -241,8 +254,12 @@ def clear_slide_caches():
     get_cached_slide_metadata.cache_clear()
 
 
-def get_slide_type_and_metadata(source_id: str, filename: str):
-    filepath = get_slide_path(source_id, filename)
+def get_slide_type_and_metadata(
+    source_id: str,
+    filename: str,
+    user_key: str | None = None,
+):
+    filepath = get_slide_path(source_id, filename, user_key=user_key)
 
     try:
         payload = get_cached_slide_metadata(filepath)
@@ -413,12 +430,13 @@ def read_root():
 def list_slides(
     path: str = Query(default=""),
     source_id: str = Query(default="default"),
+    user_key: str = Depends(get_current_user_key),
 ):
     ensure_source_dir(source_id)
 
     relative_path = sanitize_relative_path(path)
-    source_root = get_source_root(source_id)
-    target_dir = resolve_source_path(source_id, relative_path)
+    source_root = get_source_root(source_id, user_key=user_key)
+    target_dir = resolve_source_path(source_id, relative_path, user_key=user_key)
 
     if not os.path.exists(target_dir):
         raise HTTPException(status_code=404, detail="Folder not found")
@@ -572,8 +590,9 @@ def delete_item(payload: DeleteItemRequest):
 def get_metadata(
     filename: str,
     source_id: str = Query(default="default"),
+    user_key: str = Depends(get_current_user_key),
 ):
-    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename)
+    slide_type, metadata, backend = get_slide_type_and_metadata(source_id, filename, user_key=user_key)
     channels = extract_channels(metadata)
 
     return {

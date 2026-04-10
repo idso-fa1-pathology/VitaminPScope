@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import os
 import re
 import shutil
 from pathlib import Path
-from typing import BinaryIO, Iterable
+from typing import BinaryIO
 
+from services.workspace_service import get_user_uploads_root
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DATA_ROOT = PROJECT_ROOT / "data" / "sample_slides"
 
 _FILENAME_SANITIZE_RE = re.compile(r"[^A-Za-z0-9._()\- ]+")
 
@@ -25,15 +23,19 @@ class FileConflictError(StorageError):
     pass
 
 
-def get_data_root() -> Path:
-    env_value = os.getenv("VITAMINP_DATA_ROOT", "").strip()
-    if env_value:
-      return Path(env_value).expanduser().resolve()
-    return DEFAULT_DATA_ROOT.resolve()
+def get_data_root(user_key: str) -> Path:
+    """
+    Per-user upload root.
+
+    Old behavior used one shared global data root.
+    New behavior isolates each user's uploaded content under:
+      users/<user>/uploads/
+    """
+    return get_user_uploads_root(user_key).resolve()
 
 
-def ensure_data_root() -> Path:
-    root = get_data_root()
+def ensure_data_root(user_key: str) -> Path:
+    root = get_data_root(user_key)
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -54,19 +56,19 @@ def normalize_relative_path(relative_path: str | None) -> str:
     return cleaned
 
 
-def resolve_directory(relative_dir: str | None = "") -> Path:
-    root = ensure_data_root()
+def resolve_directory(user_key: str, relative_dir: str | None = "") -> Path:
+    root = ensure_data_root(user_key)
     rel = normalize_relative_path(relative_dir)
     target = (root / rel).resolve()
 
     if root != target and root not in target.parents:
-        raise InvalidPathError("Resolved path is outside the data root.")
+        raise InvalidPathError("Resolved path is outside the user data root.")
 
     return target
 
 
-def ensure_directory(relative_dir: str | None = "") -> Path:
-    target = resolve_directory(relative_dir)
+def ensure_directory(user_key: str, relative_dir: str | None = "") -> Path:
+    target = resolve_directory(user_key, relative_dir)
     target.mkdir(parents=True, exist_ok=True)
     return target
 
@@ -108,7 +110,11 @@ def resolve_collision(target_path: Path, overwrite: bool = False) -> tuple[Path,
         counter += 1
 
 
-def write_stream_to_path(file_obj: BinaryIO, destination: Path, chunk_size: int = 1024 * 1024) -> int:
+def write_stream_to_path(
+    file_obj: BinaryIO,
+    destination: Path,
+    chunk_size: int = 1024 * 1024,
+) -> int:
     total_written = 0
 
     with destination.open("wb") as out_file:
@@ -123,17 +129,21 @@ def write_stream_to_path(file_obj: BinaryIO, destination: Path, chunk_size: int 
 
 
 def save_upload_stream(
+    user_key: str,
     file_obj: BinaryIO,
     filename: str,
     target_dir: str | None = "",
     overwrite: bool = False,
 ) -> dict:
     safe_name = sanitize_filename(filename)
-    target_directory = ensure_directory(target_dir)
-    final_path, was_overwritten = resolve_collision(target_directory / safe_name, overwrite=overwrite)
+    target_directory = ensure_directory(user_key, target_dir)
+    final_path, was_overwritten = resolve_collision(
+        target_directory / safe_name,
+        overwrite=overwrite,
+    )
     size = write_stream_to_path(file_obj, final_path)
 
-    data_root = ensure_data_root()
+    data_root = ensure_data_root(user_key)
     relative_path = final_path.relative_to(data_root).as_posix()
 
     return {
@@ -145,12 +155,12 @@ def save_upload_stream(
     }
 
 
-def create_folder(relative_dir: str | None = "") -> Path:
-    return ensure_directory(relative_dir)
+def create_folder(user_key: str, relative_dir: str | None = "") -> Path:
+    return ensure_directory(user_key, relative_dir)
 
 
-def delete_path(relative_path: str) -> None:
-    target = resolve_directory(relative_path)
+def delete_path(user_key: str, relative_path: str) -> None:
+    target = resolve_directory(user_key, relative_path)
 
     if target.is_dir():
         shutil.rmtree(target)

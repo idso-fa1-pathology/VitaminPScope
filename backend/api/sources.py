@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
-from fastapi import Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from dependencies.auth import get_current_user_key
 from models.source_schemas import (
     CreateSourceRequest,
     SourceItem,
@@ -24,14 +24,19 @@ router = APIRouter(tags=["sources"])
 
 
 @router.get("/sources", response_model=SourceListResponse)
-def list_sources() -> SourceListResponse:
-    return SourceListResponse(sources=get_all_sources())
+def list_sources(
+    user_key: str = Depends(get_current_user_key),
+) -> SourceListResponse:
+    return SourceListResponse(sources=get_all_sources(user_key=user_key))
 
 
 @router.get("/sources/{source_id}", response_model=SourceItem)
-def get_source(source_id: str) -> SourceItem:
+def get_source(
+    source_id: str,
+    user_key: str = Depends(get_current_user_key),
+) -> SourceItem:
     try:
-        return get_source_by_id(source_id)
+        return get_source_by_id(source_id, user_key=user_key)
     except SourceNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -78,6 +83,7 @@ def delete_source_route(source_id: str) -> SourceMessageResponse:
     except SourceValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+
 # =========================================================
 # 🔥 NEW — WSI ASYNC SEGMENTATION
 # =========================================================
@@ -114,7 +120,7 @@ def start_wsi_segmentation(
         )
 
         ai_payload = {
-            "wsi_path": slide_path,  # 🔥 full WSI (not ROI patch)
+            "wsi_path": slide_path,
             "model_name": payload.model_name,
             "checkpoint_name": payload.checkpoint_name,
             "device": payload.device,
@@ -127,7 +133,7 @@ def start_wsi_segmentation(
             "filter_tissue": payload.filter_tissue,
             "tissue_threshold": payload.tissue_threshold,
             "clean_overlaps": payload.clean_overlaps,
-            "save_geojson": True,   # always save for WSI
+            "save_geojson": True,
             "save_json": True,
             "save_visualization": False,
             "min_area_um": payload.min_area_um,
@@ -147,9 +153,6 @@ def start_wsi_segmentation(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-# =========================================================
-# 🔥 Job status
-# =========================================================
 @router.get("/jobs/{job_id}/status")
 def get_wsi_job_status(job_id: str):
     try:
@@ -158,9 +161,6 @@ def get_wsi_job_status(job_id: str):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-# =========================================================
-# 🔥 Job results
-# =========================================================
 @router.get("/jobs/{job_id}/results")
 def get_wsi_job_results(job_id: str):
     try:

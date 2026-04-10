@@ -7,7 +7,9 @@ import uuid
 from pathlib import Path
 from typing import List, Optional
 
+from core.runtime_context import get_runtime_user_key
 from models.source_schemas import CreateSourceRequest, SourceItem, UpdateSourceRequest
+from services.workspace_service import get_user_uploads_root
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -128,44 +130,25 @@ def source_to_dict(source: SourceItem) -> dict:
     return source.model_dump()
 
 
-def load_sources() -> list[SourceItem]:
-    ensure_registry_parent_dir()
-    registry_path = get_registry_path()
+def build_user_workspace_source(user_key: str | None = None) -> SourceItem:
+    """
+    Per-user workspace source.
 
-    if not registry_path.exists():
-        sources = build_default_sources()
-        save_sources(sources)
-        return sources
+    If no user_key is provided, fall back to the runtime user.
+    Later this should come from real authenticated user context.
+    """
+    resolved_user_key = user_key or get_runtime_user_key()
+    uploads_root = get_user_uploads_root(resolved_user_key)
 
-    with registry_path.open("r", encoding="utf-8") as f:
-        payload = json.load(f)
-
-    raw_sources = payload if isinstance(payload, list) else payload.get("sources", [])
-    sources = [SourceItem(**item) for item in raw_sources]
-
-    if not sources:
-        sources = build_default_sources()
-        save_sources(sources)
-        return sources
-
-    sources = normalize_default_source(sources)
-    return sources
-
-
-def save_sources(sources: list[SourceItem]) -> None:
-    ensure_registry_parent_dir()
-    registry_path = get_registry_path()
-
-    normalized_sources = normalize_default_source(sources)
-
-    with registry_path.open("w", encoding="utf-8") as f:
-        json.dump(
-            [source_to_dict(source) for source in normalized_sources],
-            f,
-            indent=2,
-            ensure_ascii=False,
-        )
-
+    return SourceItem(
+        id="my-files",
+        name="My Files",
+        path=str(uploads_root),
+        enabled=True,
+        read_only=False,
+        source_type="user-workspace",
+        is_default=False,
+    )
 
 def build_default_sources() -> list[SourceItem]:
     default_path = DEFAULT_SOURCE_PATH
@@ -185,8 +168,6 @@ def build_default_sources() -> list[SourceItem]:
             )
         )
     except SourceValidationError:
-        # If the default path is not valid in the current environment,
-        # keep the registry empty rather than crashing.
         pass
 
     return sources
@@ -212,24 +193,76 @@ def normalize_default_source(sources: list[SourceItem]) -> list[SourceItem]:
     return normalized
 
 
-def get_all_sources() -> list[SourceItem]:
-    return load_sources()
+def attach_runtime_sources(
+    sources: list[SourceItem],
+    user_key: str | None = None,
+) -> list[SourceItem]:
+    runtime_sources: list[SourceItem] = []
+    existing_ids = {source.id for source in sources}
+
+    user_source = build_user_workspace_source(user_key=user_key)
+    if user_source.id not in existing_ids:
+        runtime_sources.append(user_source)
+
+    combined = [*sources, *runtime_sources]
+    return normalize_default_source(combined)
+
+def load_sources(user_key: str | None = None) -> list[SourceItem]:
+    ensure_registry_parent_dir()
+    registry_path = get_registry_path()
+
+    if not registry_path.exists():
+        sources = build_default_sources()
+        save_sources(sources)
+        return attach_runtime_sources(sources, user_key=user_key)
+
+    with registry_path.open("r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    raw_sources = payload if isinstance(payload, list) else payload.get("sources", [])
+    sources = [SourceItem(**item) for item in raw_sources]
+
+    if not sources:
+        sources = build_default_sources()
+        save_sources(sources)
+        return attach_runtime_sources(sources, user_key=user_key)
+
+    sources = normalize_default_source(sources)
+    return attach_runtime_sources(sources, user_key=user_key)
+
+def save_sources(sources: list[SourceItem]) -> None:
+    ensure_registry_parent_dir()
+    registry_path = get_registry_path()
+
+    persisted_sources = [s for s in sources if s.id != "my-files"]
+    normalized_sources = normalize_default_source(persisted_sources)
+
+    with registry_path.open("w", encoding="utf-8") as f:
+        json.dump(
+            [source_to_dict(source) for source in normalized_sources],
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
 
-def get_enabled_sources() -> list[SourceItem]:
-    return [source for source in load_sources() if source.enabled]
+def get_all_sources(user_key: str | None = None) -> list[SourceItem]:
+    return load_sources(user_key=user_key)
 
 
-def get_source_by_id(source_id: str) -> SourceItem:
-    sources = load_sources()
+def get_enabled_sources(user_key: str | None = None) -> list[SourceItem]:
+    return [source for source in load_sources(user_key=user_key) if source.enabled]
+
+
+def get_source_by_id(source_id: str, user_key: str | None = None) -> SourceItem:
+    sources = load_sources(user_key=user_key)
     for source in sources:
         if source.id == source_id:
             return source
     raise SourceNotFoundError(f"Source '{source_id}' not found.")
 
-
 def create_source(payload: CreateSourceRequest) -> SourceItem:
-    sources = load_sources()
+    sources = [s for s in load_sources() if s.id != "my-files"]
 
     validated_path = validate_source_path(payload.path)
     normalized_name = payload.name.strip()
@@ -256,11 +289,14 @@ def create_source(payload: CreateSourceRequest) -> SourceItem:
     sources = normalize_default_source(sources)
     save_sources(sources)
 
-    return next(source for source in sources if source.id == new_id)
+    return next(source for source in load_sources() if source.id == new_id)
 
 
 def update_source(source_id: str, payload: UpdateSourceRequest) -> SourceItem:
-    sources = load_sources()
+    if source_id == "my-files":
+        raise SourceValidationError("The user workspace source cannot be edited.")
+
+    sources = [s for s in load_sources() if s.id != "my-files"]
 
     target_index = None
     for index, source in enumerate(sources):
@@ -313,11 +349,14 @@ def update_source(source_id: str, payload: UpdateSourceRequest) -> SourceItem:
     sources = normalize_default_source(sources)
     save_sources(sources)
 
-    return next(source for source in sources if source.id == source_id)
+    return next(source for source in load_sources() if source.id == source_id)
 
 
 def delete_source(source_id: str) -> SourceItem:
-    sources = load_sources()
+    if source_id == "my-files":
+        raise SourceValidationError("The user workspace source cannot be deleted.")
+
+    sources = [s for s in load_sources() if s.id != "my-files"]
 
     if len(sources) <= 1:
         raise SourceValidationError("At least one source must remain registered.")

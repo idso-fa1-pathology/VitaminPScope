@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
 
 from fastapi import UploadFile
 
@@ -72,6 +71,7 @@ def validate_upload_file(upload: UploadFile) -> None:
 
 
 def upload_many_files(
+    user_key: str,
     files: list[UploadFile],
     target_path: str = "",
     overwrite: bool = False,
@@ -85,6 +85,7 @@ def upload_many_files(
             validate_upload_file(upload)
 
             result = save_upload_stream(
+                user_key=user_key,
                 file_obj=upload.file,
                 filename=upload.filename or "upload.bin",
                 target_dir=normalized_target,
