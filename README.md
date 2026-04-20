@@ -1,4 +1,4 @@
-# VitaminPScope — AI Digital Pathology Viewer for Whole-Slide Images (WSI)
+# VitaminPScope — AI Digital Pathology Viewer for Whole-Slide Images (WSI).
 
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
