@@ -2,7 +2,7 @@ services:
   frontend:
     image: ghcr.io/idso-fa1-pathology/vitaminpscope/frontend:latest
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
     restart: unless-stopped
@@ -22,6 +22,7 @@ services:
 
   ai_service:
     image: ghcr.io/idso-fa1-pathology/vitaminpscope/ai_service:latest
+    profiles: ["gpu"]
     volumes:
       - ./data:/data
     environment:
@@ -32,4 +33,4 @@ services:
     restart: unless-stopped    
     ports:
      - "8001:8001"
-    # gpus: all
+    gpus: all
