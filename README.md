@@ -35,7 +35,7 @@ VitaminPScope is a production-ready, web-based platform for:
 
 Built with **React + FastAPI + OpenSeadragon + Viv** — optimized for real-world deployment.
 
-**VitaminPScope is an open-source alternative to commercial digital pathology platforms (e.g., QuPath, HALO) with built-in AI segmentation.**
+**VitaminPScope is an open-source alternative to commercial digital pathology platforms (e.g., QuPath, HALO) with built-in AI segmentation**
 
 ---
 
