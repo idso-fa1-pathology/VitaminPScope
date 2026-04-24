@@ -78,17 +78,37 @@ cd VitaminPScope
 
 ### 3. Launch the app
 
+## ⚙️ GPU Support (Optional)
+
+VitaminPScope runs out-of-the-box on both CPU and GPU environments.
+
+### 🖥️ Run on CPU (default)
+
 ```bash
 docker compose -f docker-compose.public.yml up -d
 ```
 
 ---
 
+### 🚀 Run with GPU (Linux + NVIDIA only)
+
+```bash
+docker compose -f docker-compose.public.yml --profile gpu up -d
+```
+
+---
+
 ## ⚡ One-line setup
 
+### 🖥️ CPU (default)
 ```bash
 git clone https://github.com/idso-fa1-pathology/VitaminPScope.git && cd VitaminPScope && docker compose -f docker-compose.public.yml up -d
 ```
+### 🚀 GPU (Linux + NVIDIA)
+```bash
+git clone https://github.com/idso-fa1-pathology/VitaminPScope.git && cd VitaminPScope && docker compose -f docker-compose.public.yml --profile gpu up -d
+```
+
 
 ---
 
