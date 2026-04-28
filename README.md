@@ -178,6 +178,15 @@ The **VitaminP model is already included** inside the Docker image.
 
 ---
 
+## 📄 Associated Paper
+
+VitaminPScope is powered by **VitaminP**, a cross-modal learning framework for whole-cell segmentation directly from routine H&E histology.
+
+📄 Read the preprint: https://arxiv.org/abs/2604.23799
+
+If you use VitaminPScope in your research, please consider citing this work.
+
+---
 ## 📄 License
 
 MIT License
